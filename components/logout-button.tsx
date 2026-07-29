@@ -1,39 +1,23 @@
-'use client';
+import { signOutAction } from '@/lib/auth-actions';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { authClient } from '@/lib/auth/client';
-
+// Server-action sign-out (clears cookies on the server response — see B-017).
 export default function LogoutButton() {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  async function signOut() {
-    setBusy(true);
-    try {
-      await authClient.signOut();
-      router.push('/sign-in');
-      router.refresh();
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
-    <button
-      onClick={signOut}
-      disabled={busy}
-      style={{
-        height: 40,
-        padding: '0 16px',
-        background: 'transparent',
-        border: '1px solid #0F62FE',
-        color: '#0F62FE',
-        fontSize: 14,
-        cursor: busy ? 'not-allowed' : 'pointer',
-      }}
-    >
-      {busy ? 'Signing out…' : 'Sign out'}
-    </button>
+    <form action={signOutAction}>
+      <button
+        type="submit"
+        style={{
+          height: 40,
+          padding: '0 16px',
+          background: 'transparent',
+          border: '1px solid #0F62FE',
+          color: '#0F62FE',
+          fontSize: 14,
+          cursor: 'pointer',
+        }}
+      >
+        Sign out
+      </button>
+    </form>
   );
 }
