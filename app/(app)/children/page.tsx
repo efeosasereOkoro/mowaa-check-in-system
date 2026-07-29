@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { listChildren } from '@/lib/children';
 import AddChildForm from './add-child-form';
@@ -41,7 +42,9 @@ export default async function ChildrenPage() {
             {kids.map((c) => (
               <tr key={c.id}>
                 <td style={td}>
-                  {c.firstName} {c.lastName}
+                  <Link href={`/children/${c.id}`} style={{ color: '#0F62FE' }}>
+                    {c.firstName} {c.lastName}
+                  </Link>
                 </td>
                 <td style={td}>{c.age ?? '—'}</td>
                 <td style={td}>{c.guardianName}</td>

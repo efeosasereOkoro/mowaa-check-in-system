@@ -2,17 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
-import { addChild } from '@/lib/children';
+import { addChild, updateChild, deleteChild, type NewChildInput } from '@/lib/children';
 
-export type AddChildState = { error?: string; ok?: boolean };
+export type ChildActionState = { error?: string; ok?: boolean };
 
-export async function createChildAction(
-  _prev: AddChildState,
-  formData: FormData,
-): Promise<AddChildState> {
-  // Admin-only at the app layer; RLS also enforces it at the DB.
-  const staff = await requireRole(['admin']);
-
+function parseChildForm(formData: FormData): { values: NewChildInput } | { error: string } {
   const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
   const firstName = get('firstName');
   const lastName = get('lastName');
@@ -27,17 +21,69 @@ export async function createChildAction(
   if (ageRaw && (!Number.isInteger(age) || (age as number) < 0 || (age as number) > 120)) {
     return { error: 'Age must be a whole number between 0 and 120.' };
   }
+  return {
+    values: {
+      firstName,
+      lastName,
+      age,
+      guardianName,
+      guardianPhone,
+      homeAddress: get('homeAddress') || null,
+      healthDetails: get('healthDetails') || null,
+    },
+  };
+}
 
-  await addChild(staff.id, {
-    firstName,
-    lastName,
-    age,
-    guardianName,
-    guardianPhone,
-    homeAddress: get('homeAddress') || null,
-    healthDetails: get('healthDetails') || null,
-  });
+export async function createChildAction(
+  _prev: ChildActionState,
+  formData: FormData,
+): Promise<ChildActionState> {
+  const staff = await requireRole(['admin']);
+  const parsed = parseChildForm(formData);
+  if ('error' in parsed) return parsed;
 
+  await addChild(staff.id, parsed.values);
+  revalidatePath('/children');
+  return { ok: true };
+}
+
+export async function updateChildAction(
+  _prev: ChildActionState,
+  formData: FormData,
+): Promise<ChildActionState> {
+  const staff = await requireRole(['admin']);
+  const id = ((formData.get('id') as string) ?? '').trim();
+  if (!id) return { error: 'Missing child id.' };
+
+  const parsed = parseChildForm(formData);
+  if ('error' in parsed) return parsed;
+
+  await updateChild(staff.id, id, parsed.values);
+  revalidatePath('/children');
+  revalidatePath(`/children/${id}`);
+  return { ok: true };
+}
+
+export async function deleteChildAction(
+  _prev: ChildActionState,
+  formData: FormData,
+): Promise<ChildActionState> {
+  const staff = await requireRole(['admin']);
+  const id = ((formData.get('id') as string) ?? '').trim();
+  if (!id) return { error: 'Missing child id.' };
+
+  try {
+    await deleteChild(staff.id, id);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (/foreign key|23503/i.test(msg)) {
+      return {
+        error:
+          'Cannot delete: this child has attendance or medical history. Records with an audit trail are kept.',
+      };
+    }
+    return { error: 'Could not delete this child. Please try again.' };
+  }
   revalidatePath('/children');
   return { ok: true };
 }

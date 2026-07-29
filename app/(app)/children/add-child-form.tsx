@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef } from 'react';
-import { createChildAction, type AddChildState } from './actions';
+import { createChildAction, type ChildActionState } from './actions';
 
 const label: React.CSSProperties = { fontSize: 12, color: '#525252', marginBottom: 6, display: 'block' };
 const input: React.CSSProperties = {
@@ -15,7 +15,7 @@ const input: React.CSSProperties = {
 };
 
 export default function AddChildForm() {
-  const [state, action, pending] = useActionState<AddChildState, FormData>(createChildAction, {});
+  const [state, action, pending] = useActionState<ChildActionState, FormData>(createChildAction, {});
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
