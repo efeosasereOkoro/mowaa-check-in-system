@@ -41,7 +41,7 @@ export default function EditChildForm({ child }: { child: ChildValues }) {
     <form action={action} style={{ background: '#fff', border: '1px solid #E0E0E0', padding: 20 }}>
       <input type="hidden" name="id" value={child.id} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <div>
           <label style={label}>First name *</label>
           <input name="firstName" defaultValue={child.firstName} style={input} />
@@ -56,7 +56,7 @@ export default function EditChildForm({ child }: { child: ChildValues }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 14 }}>
         <div>
           <label style={label}>Guardian name *</label>
           <input name="guardianName" defaultValue={child.guardianName} style={input} />

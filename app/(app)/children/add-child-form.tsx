@@ -30,7 +30,7 @@ export default function AddChildForm() {
     >
       <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Add child</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <div>
           <label style={label}>First name *</label>
           <input name="firstName" style={input} />
@@ -45,7 +45,7 @@ export default function AddChildForm() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 14 }}>
         <div>
           <label style={label}>Guardian name *</label>
           <input name="guardianName" style={input} />
