@@ -3,6 +3,7 @@ import { withStaffContext } from '@/lib/db-authenticated';
 import { children, tags } from '@/db/schema';
 import { canSeeAddress, canSeeHealthDetails } from '@/lib/field-visibility';
 import type { StaffRole } from '@/lib/staff';
+import type { ChildStatus } from '@/lib/attendance';
 
 export type ChildCard = {
   id: string;
@@ -15,9 +16,18 @@ export type ChildCard = {
   healthDetails?: string | null; // health + admin only
   homeAddress?: string | null; // admin only
   matchedBy: 'name' | 'tag';
+  // today's attendance status (filled by the dashboard action, not lookup itself)
+  status?: ChildStatus;
+  inAt?: string | null;
+  outAt?: string | null;
+  collectorLabel?: string | null;
 };
 
-export type LookupResult = { matches: ChildCard[]; note: string | null };
+export type LookupResult = {
+  matches: ChildCard[];
+  note: string | null;
+  eventDay: { id: string; label: string | null } | null;
+};
 
 const childCols = {
   id: children.id,
@@ -65,7 +75,7 @@ function project(role: StaffRole, r: Row, matchedBy: 'name' | 'tag'): ChildCard 
  */
 export async function lookup(staffId: string, role: StaffRole, rawQuery: string): Promise<LookupResult> {
   const query = rawQuery.trim();
-  if (!query) return { matches: [], note: null };
+  if (!query) return { matches: [], note: null, eventDay: null };
 
   return withStaffContext(staffId, async (tx) => {
     // 1) resolve as an ACTIVE tag (code or NFC UID)
@@ -119,6 +129,6 @@ export async function lookup(staffId: string, role: StaffRole, rawQuery: string)
         note = `No child found for “${query}”.`;
       }
     }
-    return { matches, note };
+    return { matches, note, eventDay: null };
   });
 }
