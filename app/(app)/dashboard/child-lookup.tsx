@@ -14,16 +14,30 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
   });
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Remember the last query so an action's refresh re-runs the same search
+  // (the uncontrolled input value can be lost across the action re-render).
+  const queryRef = useRef('');
 
   function onScan(uid: string) {
     if (inputRef.current) inputRef.current.value = uid;
+    queryRef.current = uid;
     formRef.current?.requestSubmit();
   }
-  const refresh = () => formRef.current?.requestSubmit();
+  const refresh = () => {
+    if (inputRef.current && queryRef.current) inputRef.current.value = queryRef.current;
+    formRef.current?.requestSubmit();
+  };
 
   return (
     <div style={{ marginTop: 8 }}>
-      <form ref={formRef} action={action} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <form
+        ref={formRef}
+        action={action}
+        onSubmit={() => {
+          queryRef.current = inputRef.current?.value ?? queryRef.current;
+        }}
+        style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}
+      >
         <input
           ref={inputRef}
           name="q"
