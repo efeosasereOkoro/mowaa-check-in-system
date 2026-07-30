@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/require-role';
 import { getChild } from '@/lib/children';
 import { listPickupPersons } from '@/lib/pickup-persons';
+import { listTagsForChild } from '@/lib/tags';
 import EditChildForm from './edit-child-form';
+import TagSection from './tag-section';
 import PickupPersonsSection from './pickup-persons';
 import DeleteChildButton from './delete-child-button';
 
@@ -15,6 +17,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
   const child = await getChild(staff.id, id);
   if (!child) notFound();
   const pickups = await listPickupPersons(staff.id, id);
+  const childTags = await listTagsForChild(staff.id, id);
 
   return (
     <div style={{ maxWidth: 720 }}>
@@ -39,6 +42,16 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
           homeAddress: child.homeAddress,
           healthDetails: child.healthDetails,
         }}
+      />
+
+      <TagSection
+        childId={child.id}
+        tags={childTags.map((t) => ({
+          id: t.id,
+          code: t.code,
+          nfcUid: t.nfcUid,
+          active: t.active,
+        }))}
       />
 
       <PickupPersonsSection

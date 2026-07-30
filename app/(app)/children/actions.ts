@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
 import { addChild, updateChild, deleteChild, type NewChildInput } from '@/lib/children';
 import { addPickupPerson, removePickupPerson } from '@/lib/pickup-persons';
+import { setActiveTag, unassignActiveTag } from '@/lib/tags';
 
 export type ChildActionState = { error?: string; ok?: boolean };
 
@@ -75,6 +76,45 @@ export async function removePickupAction(formData: FormData) {
   const childId = ((formData.get('childId') as string) ?? '').trim();
   if (id) await removePickupPerson(staff.id, id);
   if (childId) revalidatePath(`/children/${childId}`);
+}
+
+export type TagActionState = { error?: string; ok?: boolean };
+
+// Assign or replace the child's active tag (E4-S4/S5).
+export async function assignTagAction(
+  _prev: TagActionState,
+  formData: FormData,
+): Promise<TagActionState> {
+  const staff = await requireRole(['admin']);
+  const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
+  const childId = get('childId');
+  const code = get('code');
+  const nfcUid = get('nfcUid');
+
+  if (!childId) return { error: 'Missing child.' };
+  if (!code) return { error: 'Tag code is required.' };
+
+  try {
+    await setActiveTag(staff.id, childId, { code, nfcUid: nfcUid || null });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (/unique|23505|duplicate key/i.test(msg)) {
+      return { error: 'That tag code or NFC UID is already assigned to another tag.' };
+    }
+    return { error: 'Could not assign the tag. Please try again.' };
+  }
+  revalidatePath(`/children/${childId}`);
+  return { ok: true };
+}
+
+// Plain form action: unassign (deactivate) the child's active tag.
+export async function unassignTagAction(formData: FormData) {
+  const staff = await requireRole(['admin']);
+  const childId = ((formData.get('childId') as string) ?? '').trim();
+  if (childId) {
+    await unassignActiveTag(staff.id, childId);
+    revalidatePath(`/children/${childId}`);
+  }
 }
 
 export async function updateChildAction(
