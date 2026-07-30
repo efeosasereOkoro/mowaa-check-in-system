@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { listChildren } from '@/lib/children';
+import { getCurrentEventDay } from '@/lib/attendance';
+import { getEmergencyChildIdsToday } from '@/lib/medical';
 import AddChildForm from './add-child-form';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +13,8 @@ const td: React.CSSProperties = { fontSize: 14, padding: '10px 12px', borderTop:
 export default async function ChildrenPage() {
   const staff = await requireRole(['admin']);
   const kids = await listChildren(staff.id);
+  const day = await getCurrentEventDay(staff.id);
+  const emergencyIds = await getEmergencyChildIdsToday(staff.id, day?.id ?? null);
 
   return (
     <div style={{ maxWidth: 1000 }}>
@@ -42,6 +46,12 @@ export default async function ChildrenPage() {
             {kids.map((c) => (
               <tr key={c.id}>
                 <td style={td}>
+                  {emergencyIds.has(c.id) && (
+                    <span
+                      title="Emergency medical note today"
+                      style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#DA1E28', marginRight: 8 }}
+                    />
+                  )}
                   <Link href={`/children/${c.id}`} style={{ color: '#0F62FE' }}>
                     {c.firstName} {c.lastName}
                   </Link>
