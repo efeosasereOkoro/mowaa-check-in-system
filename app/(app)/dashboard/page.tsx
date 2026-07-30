@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList, getDayRoster, type Counters } from '@/lib/dashboard';
 import ChildLookup from './child-lookup';
 import Roster from './roster';
+import DayPicker, { type DayItem } from './day-picker';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +13,16 @@ const tileNum: React.CSSProperties = { fontSize: 32, fontWeight: 300, marginTop:
 
 const emptyCounters: Counters = { total: 0, checkedIn: 0, checkedOut: 0, notArrived: 0 };
 
+function longDate(startsAt: Date): string {
+  return new Date(startsAt).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Africa/Lagos',
+  });
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
   const staff = await requireRole(['receptionist', 'admin']);
   const { day: dayParam } = await searchParams;
@@ -20,48 +30,27 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const days = await getEventDaysList(staff.id);
   const current = await getCurrentEventDay(staff.id);
   const selectedId = dayParam && days.some((d) => d.id === dayParam) ? dayParam : current?.id ?? days[0]?.id ?? null;
-  const selected = days.find((d) => d.id === selectedId) ?? null;
   const isCurrent = !!current && current.id === selectedId;
 
   const { counters, roster } = selectedId ? await getDayRoster(staff.id, selectedId) : { counters: emptyCounters, roster: [] };
 
+  const dayItems: DayItem[] = days.map((d) => ({
+    id: d.id,
+    dayNumber: d.dayNumber,
+    short: d.dayNumber === 0 ? d.label ?? `Day ${d.dayNumber}` : `Day ${d.dayNumber}`,
+    long: longDate(d.startsAt),
+    full: d.label ?? `Day ${d.dayNumber}`,
+    isCurrent: current?.id === d.id,
+  }));
+
   return (
     <div style={{ maxWidth: 1000 }}>
       <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Attendance console</div>
-      <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 16px' }}>Dashboard</h1>
 
-      {days.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: 16 }}>
-          {days.map((d) => {
-            const sel = d.id === selectedId;
-            const isToday = current?.id === d.id;
-            return (
-              <Link
-                key={d.id}
-                href={`/dashboard?day=${d.id}`}
-                style={{
-                  padding: '8px 14px',
-                  fontSize: 13,
-                  textDecoration: 'none',
-                  border: '1px solid #E0E0E0',
-                  marginRight: -1,
-                  background: sel ? '#0F62FE' : '#fff',
-                  color: sel ? '#fff' : '#161616',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {d.label ?? `Day ${d.dayNumber}`}
-                {isToday ? ' · today' : ''}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {selected && !isCurrent && (
-        <div style={{ marginBottom: 16, background: '#EDF5FF', border: '1px solid #D0E2FF', borderLeft: '3px solid #0F62FE', padding: '10px 14px', fontSize: 13 }}>
-          Viewing <strong>{selected.label ?? `Day ${selected.dayNumber}`}</strong> — check-in / check-out is only available on the current day.
-        </div>
+      {selectedId ? (
+        <DayPicker items={dayItems} selectedId={selectedId} />
+      ) : (
+        <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 16px' }}>Dashboard</h1>
       )}
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>

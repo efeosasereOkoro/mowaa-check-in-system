@@ -3,7 +3,7 @@ import { withStaffContext } from '@/lib/db-authenticated';
 import { attendanceLog, children, eventDays, tags } from '@/db/schema';
 import type { ChildStatus } from '@/lib/attendance';
 
-export type EventDayListItem = { id: string; dayNumber: number; label: string | null };
+export type EventDayListItem = { id: string; dayNumber: number; label: string | null; startsAt: Date };
 export type RosterRow = {
   id: string;
   firstName: string;
@@ -24,7 +24,7 @@ function hhmm(v: unknown): string {
 export async function getEventDaysList(staffId: string): Promise<EventDayListItem[]> {
   return withStaffContext(staffId, (tx) =>
     tx
-      .select({ id: eventDays.id, dayNumber: eventDays.dayNumber, label: eventDays.label })
+      .select({ id: eventDays.id, dayNumber: eventDays.dayNumber, label: eventDays.label, startsAt: eventDays.startsAt })
       .from(eventDays)
       .orderBy(asc(eventDays.dayNumber)),
   );
