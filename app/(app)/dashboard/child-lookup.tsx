@@ -1,10 +1,16 @@
 'use client';
 
-import { useActionState, useRef } from 'react';
+import { useActionState, useState } from 'react';
 import { lookupAction } from './actions';
 import type { LookupResult } from '@/lib/lookup';
 import TapTagButton from './tap-tag-button';
 import ChildCard from './child-card';
+
+function fd(q: string) {
+  const f = new FormData();
+  f.set('q', q);
+  return f;
+}
 
 export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
   const [state, action, pending] = useActionState<LookupResult, FormData>(lookupAction, {
@@ -12,35 +18,22 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
     note: null,
     eventDay: null,
   });
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  // Remember the last query so an action's refresh re-runs the same search
-  // (the uncontrolled input value can be lost across the action re-render).
-  const queryRef = useRef('');
+  // Controlled query so a post-action refresh always re-runs the same search.
+  const [query, setQuery] = useState('');
 
   function onScan(uid: string) {
-    if (inputRef.current) inputRef.current.value = uid;
-    queryRef.current = uid;
-    formRef.current?.requestSubmit();
+    setQuery(uid);
+    action(fd(uid));
   }
-  const refresh = () => {
-    if (inputRef.current && queryRef.current) inputRef.current.value = queryRef.current;
-    formRef.current?.requestSubmit();
-  };
+  const refresh = () => action(fd(query));
 
   return (
     <div style={{ marginTop: 8 }}>
-      <form
-        ref={formRef}
-        action={action}
-        onSubmit={() => {
-          queryRef.current = inputRef.current?.value ?? queryRef.current;
-        }}
-        style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}
-      >
+      <form action={action} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <input
-          ref={inputRef}
           name="q"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           autoFocus
           autoComplete="off"
           placeholder="Search by child name or tag ID"
