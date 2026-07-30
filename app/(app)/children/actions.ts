@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
 import { addChild, updateChild, deleteChild, type NewChildInput } from '@/lib/children';
+import { addPickupPerson, removePickupPerson } from '@/lib/pickup-persons';
 
 export type ChildActionState = { error?: string; ok?: boolean };
 
@@ -45,6 +46,35 @@ export async function createChildAction(
   await addChild(staff.id, parsed.values);
   revalidatePath('/children');
   return { ok: true };
+}
+
+export type PickupActionState = { error?: string; ok?: boolean };
+
+export async function addPickupAction(
+  _prev: PickupActionState,
+  formData: FormData,
+): Promise<PickupActionState> {
+  const staff = await requireRole(['admin']);
+  const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
+  const childId = get('childId');
+  const name = get('name');
+  const relationship = get('relationship');
+
+  if (!childId) return { error: 'Missing child.' };
+  if (!name || !relationship) return { error: 'Name and relationship are required.' };
+
+  await addPickupPerson(staff.id, childId, { name, relationship, phone: get('phone') || null });
+  revalidatePath(`/children/${childId}`);
+  return { ok: true };
+}
+
+// Plain form action (no useActionState): remove a pickup person.
+export async function removePickupAction(formData: FormData) {
+  const staff = await requireRole(['admin']);
+  const id = ((formData.get('id') as string) ?? '').trim();
+  const childId = ((formData.get('childId') as string) ?? '').trim();
+  if (id) await removePickupPerson(staff.id, id);
+  if (childId) revalidatePath(`/children/${childId}`);
 }
 
 export async function updateChildAction(

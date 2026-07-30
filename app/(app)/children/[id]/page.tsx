@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/require-role';
 import { getChild } from '@/lib/children';
+import { listPickupPersons } from '@/lib/pickup-persons';
 import EditChildForm from './edit-child-form';
+import PickupPersonsSection from './pickup-persons';
 import DeleteChildButton from './delete-child-button';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +14,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
   const staff = await requireRole(['admin']);
   const child = await getChild(staff.id, id);
   if (!child) notFound();
+  const pickups = await listPickupPersons(staff.id, id);
 
   return (
     <div style={{ maxWidth: 720 }}>
@@ -36,6 +39,16 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
           homeAddress: child.homeAddress,
           healthDetails: child.healthDetails,
         }}
+      />
+
+      <PickupPersonsSection
+        childId={child.id}
+        persons={pickups.map((p) => ({
+          id: p.id,
+          name: p.name,
+          relationship: p.relationship,
+          phone: p.phone,
+        }))}
       />
 
       <div style={{ marginTop: 24, borderTop: '1px solid #E0E0E0', paddingTop: 20 }}>
