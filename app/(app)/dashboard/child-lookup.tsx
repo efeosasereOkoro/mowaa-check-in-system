@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react';
 import { lookupAction } from './actions';
 import type { LookupResult } from '@/lib/lookup';
-import TapTagButton from './tap-tag-button';
+import ScanQrButton from './scan-qr-button';
 import ChildCard from './child-card';
 
 function fd(q: string) {
@@ -21,9 +21,9 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
   // Controlled query so a post-action refresh always re-runs the same search.
   const [query, setQuery] = useState('');
 
-  function onScan(uid: string) {
-    setQuery(uid);
-    action(fd(uid));
+  function onScan(token: string) {
+    setQuery(token);
+    action(fd(token));
   }
   const refresh = () => action(fd(query));
 
@@ -42,7 +42,7 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
         <button type="submit" disabled={pending} style={{ height: 48, padding: '0 20px', background: pending ? '#C6C6C6' : '#393939', color: '#fff', border: 'none', fontSize: 14, cursor: pending ? 'not-allowed' : 'pointer' }}>
           {pending ? 'Searching…' : 'Search'}
         </button>
-        <TapTagButton onScan={onScan} />
+        <ScanQrButton onScan={onScan} />
       </form>
 
       {state.eventDay === null && (state.matches.length > 0 || state.note) && (
