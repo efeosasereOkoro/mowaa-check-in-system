@@ -38,6 +38,9 @@ export const staff = pgTable('staff', {
   email: text('email').notNull().unique(),
   role: staffRole('role').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Set when an admin suspends the user: blocks login (getCurrentUser) and, via
+  // app_role(), denies all RLS-scoped data ops. Null = active. Reversible.
+  deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
 });
 
 // ---------- event_days (GMT+1 admin-defined windows) ----------

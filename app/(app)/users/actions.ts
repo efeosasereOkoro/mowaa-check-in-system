@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
-import { createStaffUser } from '@/lib/staff-admin';
+import { createStaffUser, setUserSuspended, type SuspendResult } from '@/lib/staff-admin';
 import type { StaffRole } from '@/lib/staff';
 
 export type UserActionState = { error?: string; ok?: boolean; createdName?: string };
@@ -29,4 +29,12 @@ export async function inviteUserAction(_prev: UserActionState, formData: FormDat
 
   revalidatePath('/users');
   return { ok: true, createdName: name };
+}
+
+/** Suspend / reactivate a user (admin). Called directly from the Users list. */
+export async function setUserSuspendedAction(userId: string, suspend: boolean): Promise<SuspendResult> {
+  const admin = await requireRole(['admin']);
+  const result = await setUserSuspended(admin.id, userId, suspend);
+  if (result.ok) revalidatePath('/users');
+  return result;
 }

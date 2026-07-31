@@ -16,14 +16,25 @@ export default async function Home() {
   // Provisioned staff → land on their role's default home.
   if (current.staff) redirect(defaultHome(current.staff.role));
 
-  // Authenticated but no staff role → no access (invite model).
+  // Authenticated but suspended, or no staff role → no access (invite model).
   return (
     <main style={shell}>
       <div style={inner}>
-        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Account not set up</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>
+          {current.suspended ? 'Account suspended' : 'Account not set up'}
+        </h1>
         <p style={{ fontSize: 14, color: '#525252', margin: '12px 0 24px' }}>
-          You&rsquo;re signed in as <strong>{current.email}</strong>, but this account isn&rsquo;t
-          linked to a staff role yet. Ask an admin to set up your access.
+          {current.suspended ? (
+            <>
+              Your access as <strong>{current.email}</strong> has been suspended. Contact an admin if
+              you think this is a mistake.
+            </>
+          ) : (
+            <>
+              You&rsquo;re signed in as <strong>{current.email}</strong>, but this account isn&rsquo;t
+              linked to a staff role yet. Ask an admin to set up your access.
+            </>
+          )}
         </p>
         <LogoutButton />
       </div>

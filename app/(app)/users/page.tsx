@@ -2,6 +2,7 @@ import { requireRole } from '@/lib/require-role';
 import { listStaff } from '@/lib/staff-admin';
 import { ROLE_LABELS } from '@/lib/staff';
 import AddUserForm from './add-user-form';
+import UserRowActions from './user-row-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,19 +34,20 @@ export default async function UsersPage() {
               <th style={th}>Email</th>
               <th style={th}>Role</th>
               <th style={th}>Status</th>
+              <th style={th}>Action</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
               <tr>
-                <td style={{ ...td, color: '#8D8D8D' }} colSpan={4}>
+                <td style={{ ...td, color: '#8D8D8D' }} colSpan={5}>
                   No users yet.
                 </td>
               </tr>
             )}
             {users.map((u) => (
-              <tr key={u.id}>
-                <td style={td}>
+              <tr key={u.id} style={u.status === 'suspended' ? { background: '#FAFAFA' } : undefined}>
+                <td style={{ ...td, color: u.status === 'suspended' ? '#8D8D8D' : undefined }}>
                   {u.name}
                   {u.id === staff.id && <span style={{ color: '#8D8D8D', fontSize: 12 }}> (you)</span>}
                 </td>
@@ -56,11 +58,12 @@ export default async function UsersPage() {
                   </span>
                 </td>
                 <td style={td}>
-                  {u.linked ? (
-                    <span style={{ color: '#0E6027', fontSize: 13 }}>● Active</span>
-                  ) : (
-                    <span style={{ color: '#8D6E00', fontSize: 13 }}>● Invited — awaiting first login</span>
-                  )}
+                  {u.status === 'active' && <span style={{ color: '#0E6027', fontSize: 13 }}>● Active</span>}
+                  {u.status === 'invited' && <span style={{ color: '#8D6E00', fontSize: 13 }}>● Invited — awaiting first login</span>}
+                  {u.status === 'suspended' && <span style={{ color: '#A2191F', fontSize: 13 }}>● Suspended</span>}
+                </td>
+                <td style={td}>
+                  <UserRowActions userId={u.id} suspended={u.status === 'suspended'} isSelf={u.id === staff.id} />
                 </td>
               </tr>
             ))}
@@ -68,8 +71,8 @@ export default async function UsersPage() {
         </table>
       </div>
       <p style={{ fontSize: 12, color: '#8D8D8D', marginTop: 12 }}>
-        {users.length} user{users.length === 1 ? '' : 's'}. Removing / suspending users and password reset come later
-        (B-026).
+        {users.length} user{users.length === 1 ? '' : 's'}. Suspend blocks a user&rsquo;s access while keeping their
+        history attributed; reactivate to restore it. Emailed invites and password reset come later (B-026).
       </p>
     </div>
   );

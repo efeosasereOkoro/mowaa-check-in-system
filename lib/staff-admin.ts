@@ -1,4 +1,4 @@
-import { asc, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { withStaffContext } from '@/lib/db-authenticated';
 import { staff } from '@/db/schema';
@@ -12,21 +12,65 @@ import type { StaffRole } from '@/lib/staff';
  * on email sending (B-011 / B-026).
  */
 
+export type StaffStatus = 'active' | 'invited' | 'suspended';
 export type StaffListItem = {
   id: string;
   name: string;
   email: string;
   role: StaffRole;
-  linked: boolean; // has an auth identity (has logged in / was created with one)
+  status: StaffStatus;
 };
 
 export async function listStaff(adminId: string): Promise<StaffListItem[]> {
   return withStaffContext(adminId, async (tx) => {
     const rows = await tx
-      .select({ id: staff.id, name: staff.name, email: staff.email, role: staff.role, authUserId: staff.authUserId })
+      .select({
+        id: staff.id,
+        name: staff.name,
+        email: staff.email,
+        role: staff.role,
+        authUserId: staff.authUserId,
+        deactivatedAt: staff.deactivatedAt,
+      })
       .from(staff)
       .orderBy(asc(staff.name));
-    return rows.map((r) => ({ id: r.id, name: r.name, email: r.email, role: r.role, linked: !!r.authUserId }));
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      role: r.role,
+      status: r.deactivatedAt ? 'suspended' : r.authUserId ? 'active' : 'invited',
+    }));
+  });
+}
+
+export type SuspendResult = { ok?: true; error?: string };
+
+/** Suspend or reactivate a staff member. Guards against self-lockout and removing the last active admin. */
+export async function setUserSuspended(adminId: string, userId: string, suspend: boolean): Promise<SuspendResult> {
+  if (suspend && userId === adminId) return { error: 'You cannot suspend your own account.' };
+
+  return withStaffContext(adminId, async (tx) => {
+    const [target] = await tx
+      .select({ id: staff.id, role: staff.role, deactivatedAt: staff.deactivatedAt })
+      .from(staff)
+      .where(eq(staff.id, userId))
+      .limit(1);
+    if (!target) return { error: 'User not found.' };
+
+    if (suspend && target.role === 'admin') {
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(staff)
+        .where(and(eq(staff.role, 'admin'), isNull(staff.deactivatedAt), ne(staff.id, userId)));
+      if (n === 0) return { error: 'This is the last active admin — provision or reactivate another admin first.' };
+    }
+
+    await tx
+      .update(staff)
+      .set({ deactivatedAt: suspend ? sql`now()` : null })
+      .where(eq(staff.id, userId));
+    return { ok: true };
   });
 }
 

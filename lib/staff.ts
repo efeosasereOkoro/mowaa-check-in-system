@@ -17,6 +17,7 @@ export type CurrentUser = {
   email: string;
   name: string | null;
   staff: StaffRecord | null;
+  suspended: boolean; // matched a staff row, but it's deactivated → treated as no access
 };
 
 /**
@@ -43,6 +44,11 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   let record = rows[0] ?? null;
 
+  // Suspended → no access. Report it (root page shows a message) instead of a role.
+  if (record?.deactivatedAt) {
+    return { authUserId: user.id, email: user.email, name: user.name ?? null, staff: null, suspended: true };
+  }
+
   // Backfill the auth link when matched by email for the first time.
   if (record && !record.authUserId) {
     await db.update(staff).set({ authUserId: user.id }).where(eq(staff.id, record.id));
@@ -54,5 +60,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     email: user.email,
     name: user.name ?? null,
     staff: record,
+    suspended: false,
   };
 }
