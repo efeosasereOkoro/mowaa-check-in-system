@@ -3,11 +3,9 @@ import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList } from '@/lib/dashboard';
 import { getAttendanceReport, getEndOfDayFlags } from '@/lib/reports';
 import ReportDaySelect, { type DayOption } from './report-day-select';
+import AttendanceTable from './attendance-table';
 
 export const dynamic = 'force-dynamic';
-
-const th: React.CSSProperties = { textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '10px 12px', whiteSpace: 'nowrap' };
-const td: React.CSSProperties = { fontSize: 14, padding: '10px 12px', borderTop: '1px solid #E0E0E0', whiteSpace: 'nowrap' };
 
 const exportBtn: React.CSSProperties = {
   display: 'inline-flex',
@@ -101,49 +99,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         <span style={{ color: '#8D8D8D', fontWeight: 400 }}> ({rows.length})</span>
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid #E0E0E0', overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: allDays ? 760 : 640 }}>
-          <thead>
-            <tr style={{ background: '#E0E0E0' }}>
-              {allDays && <th style={th}>Day</th>}
-              <th style={th}>Time</th>
-              <th style={th}>Child</th>
-              <th style={th}>Action</th>
-              <th style={th}>Staff</th>
-              <th style={th}>Collector</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td style={{ ...td, color: '#8D8D8D' }} colSpan={allDays ? 6 : 5}>
-                  No check-in / check-out activity{allDays ? ' yet' : ' for this day'}.
-                </td>
-              </tr>
-            )}
-            {rows.map((r, i) => (
-              <tr key={i}>
-                {allDays && <td style={td}>{r.dayLabel}</td>}
-                <td style={{ ...td, fontFamily: 'monospace' }}>{r.time}</td>
-                <td style={{ ...td, whiteSpace: 'normal' }}>{r.child}</td>
-                <td style={td}>
-                  {r.action}
-                  {r.isOverride && (
-                    <span
-                      title={r.overrideReason ?? 'Admin override'}
-                      style={{ marginLeft: 6, fontSize: 11, background: '#FFF1D6', color: '#8A6A00', padding: '1px 6px', borderRadius: 2 }}
-                    >
-                      override
-                    </span>
-                  )}
-                </td>
-                <td style={{ ...td, color: '#525252' }}>{r.staff}</td>
-                <td style={{ ...td, whiteSpace: 'normal', color: '#525252' }}>{r.collector || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AttendanceTable rows={rows} allDays={allDays} />
 
       <p style={{ fontSize: 12, color: '#8D8D8D', marginTop: 12 }}>
         Exports open in Excel. Attendance export follows the selected day; register export is the full children list.
