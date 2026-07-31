@@ -1,6 +1,8 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { withStaffContext } from '@/lib/db-authenticated';
-import { children } from '@/db/schema';
+import { children, tags } from '@/db/schema';
+
+export type CardChild = { id: string; firstName: string; lastName: string; tagCode: string | null; qrToken: string };
 
 export type NewChildInput = {
   firstName: string;
@@ -16,6 +18,23 @@ export type NewChildInput = {
 export async function listChildren(staffId: string) {
   return withStaffContext(staffId, (tx) =>
     tx.select().from(children).orderBy(desc(children.createdAt)),
+  );
+}
+
+/** Children + their active tag code + QR token, for printable ID cards (E11-S3, admin). */
+export async function listChildrenForCards(staffId: string): Promise<CardChild[]> {
+  return withStaffContext(staffId, (tx) =>
+    tx
+      .select({
+        id: children.id,
+        firstName: children.firstName,
+        lastName: children.lastName,
+        tagCode: tags.code,
+        qrToken: children.qrToken,
+      })
+      .from(children)
+      .leftJoin(tags, and(eq(tags.childId, children.id), eq(tags.active, true)))
+      .orderBy(asc(children.firstName), asc(children.lastName)),
   );
 }
 

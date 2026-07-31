@@ -19,7 +19,12 @@ export default async function ChildrenPage() {
   return (
     <div style={{ maxWidth: 1000 }}>
       <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Register</div>
-      <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 24px' }}>Children</h1>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
+        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Children</h1>
+        <Link href="/cards" target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
+          Print QR ID cards →
+        </Link>
+      </div>
 
       <AddChildForm />
 
