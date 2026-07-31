@@ -7,10 +7,12 @@ export default function UserRowActions({
   userId,
   suspended,
   isSelf,
+  full,
 }: {
   userId: string;
   suspended: boolean;
   isSelf: boolean;
+  full?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -35,12 +37,13 @@ export default function UserRowActions({
         onClick={onClick}
         disabled={pending}
         style={{
-          height: 28,
+          height: full ? 44 : 28,
+          width: full ? '100%' : undefined,
           padding: '0 12px',
-          background: 'transparent',
+          background: full ? '#fff' : 'transparent',
           border: `1px solid ${suspended ? '#0F62FE' : '#DA1E28'}`,
           color: suspended ? '#0F62FE' : '#DA1E28',
-          fontSize: 12,
+          fontSize: full ? 13 : 12,
           cursor: pending ? 'wait' : 'pointer',
           whiteSpace: 'nowrap',
         }}
