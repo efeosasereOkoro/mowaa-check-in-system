@@ -2,7 +2,16 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { inviteUserAction, type UserActionState } from './actions';
-import { ROLE_LABELS, type StaffRole } from '@/lib/staff';
+import type { StaffRole } from '@/lib/staff';
+
+// Local labels — this is a client component, so it must NOT import a *value* from
+// lib/staff.ts (that module pulls in server-only auth/db code). Type-only import above
+// is erased at build; the labels live here.
+const ROLE_LABELS: Record<StaffRole, string> = {
+  admin: 'Admin',
+  receptionist: 'Receptionist',
+  health: 'Health Officer',
+};
 
 const label: React.CSSProperties = { fontSize: 12, color: '#525252', marginBottom: 6, display: 'block' };
 const input: React.CSSProperties = {
