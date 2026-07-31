@@ -32,8 +32,10 @@ A 5-minute guide for the reception desk. Everything you need is on the **Dashboa
 
 Under **Find a child** you have two ways:
 
+- **Scan QR** — tap **Scan QR**, allow the camera, and point it at the QR code on the child's ID card.
+  The child's card opens automatically. Works on any phone or laptop with a camera.
 - **Search** — type the child's **name** or **tag number** (e.g. `TAG-001`) and pick them from the list.
-- **NFC tap** *(Chrome on Android only)* — tap the child's SmartTag on the back of the phone.
+  Always available as a fallback if a camera isn't handy or a card is missing.
 
 The child's card opens with their name, age, tag, guardian name and phone, and current status.
 

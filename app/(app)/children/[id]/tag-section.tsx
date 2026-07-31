@@ -27,7 +27,11 @@ export default function TagSection({ childId, tags }: { childId: string; tags: T
 
   return (
     <div style={{ marginTop: 24, borderTop: '1px solid #E0E0E0', paddingTop: 20 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>SmartTag</div>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Tag number</div>
+      <p style={{ fontSize: 12, color: '#8D8D8D', margin: '0 0 12px', maxWidth: 560 }}>
+        The human-readable number printed on the child&apos;s ID card and used for manual search. The QR code
+        (used for scanning) is generated automatically.
+      </p>
 
       {active ? (
         <div
@@ -42,14 +46,6 @@ export default function TagSection({ childId, tags }: { childId: string; tags: T
         >
           <div style={{ fontSize: 14 }}>
             Current: <span style={mono}>{active.code}</span>
-            {active.nfcUid ? (
-              <span style={{ color: '#525252' }}>
-                {' '}
-                · UID <span style={mono}>{active.nfcUid}</span>
-              </span>
-            ) : (
-              <span style={{ color: '#8D8D8D' }}> · no UID captured</span>
-            )}
           </div>
           <form action={unassignTagAction}>
             <input type="hidden" name="childId" value={childId} />
@@ -75,8 +71,7 @@ export default function TagSection({ childId, tags }: { childId: string; tags: T
 
       <form ref={formRef} action={action} style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
         <input type="hidden" name="childId" value={childId} />
-        <input name="code" placeholder="Tag code (e.g. TAG-001)" style={{ ...input, flex: 1, minWidth: 160 }} />
-        <input name="nfcUid" placeholder="NFC UID (optional — from tap)" style={{ ...input, flex: 1.4, minWidth: 180 }} />
+        <input name="code" placeholder="Tag number (e.g. TAG-001)" style={{ ...input, flex: 1, minWidth: 180 }} />
         <button
           type="submit"
           disabled={busy}

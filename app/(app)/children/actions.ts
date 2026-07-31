@@ -89,17 +89,16 @@ export async function assignTagAction(
   const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
   const childId = get('childId');
   const code = get('code');
-  const nfcUid = get('nfcUid');
 
   if (!childId) return { error: 'Missing child.' };
-  if (!code) return { error: 'Tag code is required.' };
+  if (!code) return { error: 'Tag number is required.' };
 
   try {
-    await setActiveTag(staff.id, childId, { code, nfcUid: nfcUid || null });
+    await setActiveTag(staff.id, childId, { code, nfcUid: null });
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
     if (/unique|23505|duplicate key/i.test(msg)) {
-      return { error: 'That tag code or NFC UID is already assigned to another tag.' };
+      return { error: 'That tag number is already assigned to another child.' };
     }
     return { error: 'Could not assign the tag. Please try again.' };
   }

@@ -89,12 +89,12 @@ export async function lookup(staffId: string, role: StaffRole, rawQuery: string)
       return { matches: [project(role, qrChild[0], 'tag')], note: null, eventDay: null };
     }
 
-    // 1) resolve as an ACTIVE tag (code or NFC UID)
+    // 1) resolve as an ACTIVE tag by its human-readable number (manual entry)
     const activeTag = (await tx
       .select({ ...childCols, tagCode: tags.code })
       .from(tags)
       .innerJoin(children, eq(children.id, tags.childId))
-      .where(and(eq(tags.active, true), or(eq(tags.code, query), eq(tags.nfcUid, query))))
+      .where(and(eq(tags.active, true), eq(tags.code, query)))
       .limit(1)) as Row[];
 
     // 2) name search (first, last, or "first last")
@@ -130,7 +130,7 @@ export async function lookup(staffId: string, role: StaffRole, rawQuery: string)
       const anyTag = await tx
         .select({ active: tags.active, childId: tags.childId })
         .from(tags)
-        .where(or(eq(tags.code, query), eq(tags.nfcUid, query)))
+        .where(eq(tags.code, query))
         .limit(1);
       if (anyTag[0] && !anyTag[0].active) {
         note = `Tag “${query}” was deactivated — the child likely has a replacement tag. Search by name instead.`;
