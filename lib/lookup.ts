@@ -78,6 +78,17 @@ export async function lookup(staffId: string, role: StaffRole, rawQuery: string)
   if (!query) return { matches: [], note: null, eventDay: null };
 
   return withStaffContext(staffId, async (tx) => {
+    // 0) resolve as a scanned QR token (exact, opaque) → child (E11)
+    const qrChild = (await tx
+      .select({ ...childCols, tagCode: tags.code })
+      .from(children)
+      .leftJoin(tags, and(eq(tags.childId, children.id), eq(tags.active, true)))
+      .where(eq(children.qrToken, query))
+      .limit(1)) as Row[];
+    if (qrChild[0]) {
+      return { matches: [project(role, qrChild[0], 'tag')], note: null, eventDay: null };
+    }
+
     // 1) resolve as an ACTIVE tag (code or NFC UID)
     const activeTag = (await tx
       .select({ ...childCols, tagCode: tags.code })

@@ -60,6 +60,10 @@ export const children = pgTable('children', {
   homeAddress: text('home_address'), // admin-only visibility (enforced by RLS in E3)
   healthDetails: text('health_details'), // allergies / conditions, free text
   photoUrl: text('photo_url'), // optional; feature-flagged pending safeguarding (B-004)
+  // Opaque per-child QR token (E11): printed as a QR on the child's ID card; a scan
+  // resolves to this child via lookup(). Non-guessable; auto-provisioned; QR payload
+  // is the bare token (not a URL). See DECISIONS D-026.
+  qrToken: text('qr_token').notNull().unique().default(sql`gen_random_uuid()`),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
