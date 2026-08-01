@@ -43,6 +43,13 @@
       "when": 1785458000000,
       "tag": "0005_staff_deactivated",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785459000000,
+      "tag": "0006_append_only_allow_collector_cascade",
+      "breakpoints": true
     }
   ]
 }
