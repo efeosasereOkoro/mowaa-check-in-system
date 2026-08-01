@@ -27,9 +27,14 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
         </Link>{' '}
         / Edit
       </div>
-      <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 24px' }}>
-        {child.firstName} {child.lastName}
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
+        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>
+          {child.firstName} {child.lastName}
+        </h1>
+        <Link href={`/cards?child=${child.id}`} target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
+          Print QR card →
+        </Link>
+      </div>
 
       <EditChildForm
         child={{

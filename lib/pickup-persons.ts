@@ -25,6 +25,13 @@ export async function addPickupPerson(staffId: string, childId: string, input: N
   );
 }
 
+/** Update a pickup person's details. RLS (`pickups_update`) permits admins only. */
+export async function updatePickupPerson(staffId: string, id: string, input: NewPickupInput) {
+  return withStaffContext(staffId, (tx) =>
+    tx.update(pickupPersons).set(input).where(eq(pickupPersons.id, id)),
+  );
+}
+
 /** Remove a pickup person. RLS (`pickups_delete`) permits admins only. */
 export async function removePickupPerson(staffId: string, id: string) {
   return withStaffContext(staffId, (tx) =>

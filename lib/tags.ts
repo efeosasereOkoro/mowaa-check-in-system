@@ -30,6 +30,38 @@ export async function setActiveTag(staffId: string, childId: string, input: NewT
   });
 }
 
+/**
+ * Generate a readable, unique tag number from the child's name (e.g. "AMOK-4821")
+ * and set it as the active tag — deactivating any previous one. Every child should
+ * have one, so this is called at registration and by the "Generate" button. Uniqueness
+ * is checked against existing codes (retry on clash); the DB unique constraint is the
+ * final backstop.
+ */
+export async function assignGeneratedTag(
+  staffId: string,
+  childId: string,
+  firstName: string,
+  lastName: string,
+): Promise<string> {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toUpperCase();
+  const prefix = (clean(firstName).slice(0, 2) + clean(lastName).slice(0, 2)) || 'CH';
+  return withStaffContext(staffId, async (tx) => {
+    let code = '';
+    for (let i = 0; i < 25; i++) {
+      const candidate = `${prefix}-${1000 + Math.floor(Math.random() * 9000)}`;
+      const clash = await tx.select({ c: tags.code }).from(tags).where(eq(tags.code, candidate)).limit(1);
+      if (!clash[0]) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) code = `${prefix}-${Date.now().toString().slice(-6)}`;
+    await tx.update(tags).set({ active: false }).where(and(eq(tags.childId, childId), eq(tags.active, true)));
+    await tx.insert(tags).values({ childId, code, active: true });
+    return code;
+  });
+}
+
 /** Deactivate the child's active tag without assigning a new one. */
 export async function unassignActiveTag(staffId: string, childId: string) {
   return withStaffContext(staffId, (tx) =>

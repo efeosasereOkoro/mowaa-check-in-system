@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
-import { addChild, updateChild, deleteChild, type NewChildInput } from '@/lib/children';
-import { addPickupPerson, removePickupPerson } from '@/lib/pickup-persons';
-import { setActiveTag, unassignActiveTag } from '@/lib/tags';
+import { addChild, updateChild, deleteChild, getChild, type NewChildInput } from '@/lib/children';
+import { addPickupPerson, removePickupPerson, updatePickupPerson } from '@/lib/pickup-persons';
+import { assignGeneratedTag, unassignActiveTag } from '@/lib/tags';
 
 export type ChildActionState = { error?: string; ok?: boolean };
 
@@ -44,7 +44,9 @@ export async function createChildAction(
   const parsed = parseChildForm(formData);
   if ('error' in parsed) return parsed;
 
-  await addChild(staff.id, parsed.values);
+  const [created] = await addChild(staff.id, parsed.values);
+  // Every child gets a tag number automatically — no manual entry, none missed.
+  if (created?.id) await assignGeneratedTag(staff.id, created.id, parsed.values.firstName, parsed.values.lastName);
   revalidatePath('/children');
   return { ok: true };
 }
@@ -78,29 +80,40 @@ export async function removePickupAction(formData: FormData) {
   if (childId) revalidatePath(`/children/${childId}`);
 }
 
+// Edit an existing pickup person's details.
+export async function editPickupAction(_prev: PickupActionState, formData: FormData): Promise<PickupActionState> {
+  const staff = await requireRole(['admin']);
+  const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
+  const id = get('id');
+  const childId = get('childId');
+  const name = get('name');
+  const relationship = get('relationship');
+
+  if (!id) return { error: 'Missing pickup person.' };
+  if (!name || !relationship) return { error: 'Name and relationship are required.' };
+
+  await updatePickupPerson(staff.id, id, { name, relationship, phone: get('phone') || null });
+  if (childId) revalidatePath(`/children/${childId}`);
+  return { ok: true };
+}
+
 export type TagActionState = { error?: string; ok?: boolean };
 
-// Assign or replace the child's active tag (E4-S4/S5).
-export async function assignTagAction(
+// Generate a fresh unique tag number for the child (auto — no manual entry).
+export async function generateTagAction(
   _prev: TagActionState,
   formData: FormData,
 ): Promise<TagActionState> {
   const staff = await requireRole(['admin']);
-  const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
-  const childId = get('childId');
-  const code = get('code');
-
+  const childId = ((formData.get('childId') as string) ?? '').trim();
   if (!childId) return { error: 'Missing child.' };
-  if (!code) return { error: 'Tag number is required.' };
 
   try {
-    await setActiveTag(staff.id, childId, { code, nfcUid: null });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : '';
-    if (/unique|23505|duplicate key/i.test(msg)) {
-      return { error: 'That tag number is already assigned to another child.' };
-    }
-    return { error: 'Could not assign the tag. Please try again.' };
+    const child = await getChild(staff.id, childId);
+    if (!child) return { error: 'Child not found.' };
+    await assignGeneratedTag(staff.id, childId, child.firstName, child.lastName);
+  } catch {
+    return { error: 'Could not generate a tag. Please try again.' };
   }
   revalidatePath(`/children/${childId}`);
   return { ok: true };

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList, getDayRoster, type Counters } from '@/lib/dashboard';
@@ -45,7 +46,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Attendance console</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Attendance console</div>
+        {staff.role === 'admin' && (
+          <Link
+            href="/children"
+            style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 16px', background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none' }}
+          >
+            + Register a child
+          </Link>
+        )}
+      </div>
 
       {selectedId ? (
         <DayPicker items={dayItems} selectedId={selectedId} />

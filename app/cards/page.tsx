@@ -27,9 +27,12 @@ function CardFace({ child, svg }: { child: CardChild; svg: string }) {
   );
 }
 
-export default async function CardsPage() {
+export default async function CardsPage({ searchParams }: { searchParams: Promise<{ child?: string }> }) {
   const staff = await requireRole(['admin']);
-  const kids = await listChildrenForCards(staff.id);
+  const { child: childId } = await searchParams;
+  const allKids = await listChildrenForCards(staff.id);
+  const kids = childId ? allKids.filter((k) => k.id === childId) : allKids;
+  const single = !!childId;
   const svgs = await Promise.all(kids.map((k) => qrSvg(k.qrToken)));
 
   return (
@@ -56,10 +59,10 @@ export default async function CardsPage() {
       `}</style>
 
       <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link href="/children" style={{ color: '#0F62FE', fontSize: 14 }}>
-          ← Back to Children
+        <Link href={single && kids[0] ? `/children/${kids[0].id}` : '/children'} style={{ color: '#0F62FE', fontSize: 14 }}>
+          ← Back{single && kids[0] ? ` to ${kids[0].firstName}` : ' to Children'}
         </Link>
-        <h1 style={{ fontSize: 24, fontWeight: 400, margin: 0, flex: 1, minWidth: 200 }}>ID cards</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 400, margin: 0, flex: 1, minWidth: 200 }}>{single ? 'ID card' : 'ID cards'}</h1>
         <span style={{ fontSize: 13, color: '#525252' }}>{kids.length} card{kids.length === 1 ? '' : 's'}</span>
         <PrintButton />
       </div>
