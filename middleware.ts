@@ -9,6 +9,9 @@ const authMiddleware = auth.middleware({ loginUrl: '/sign-in' });
 // enforced inside the actions/handlers themselves via requireStaff/requireRole.
 export default function middleware(req: NextRequest) {
   if (req.method !== 'GET') return NextResponse.next();
+  // The root path is the public marketing landing — the page itself redirects
+  // signed-in users to their home, so it must not be gated by auth here.
+  if (req.nextUrl.pathname === '/') return NextResponse.next();
   return authMiddleware(req);
 }
 

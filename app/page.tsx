@@ -1,17 +1,26 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/staff';
 import { defaultHome } from '@/lib/rbac';
 import LogoutButton from '@/components/logout-button';
+import MarketingLanding from './marketing-landing';
 
 // Reads session + staff role, so render dynamically.
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'SmartTag Check-In — child check-in & check-out',
+  description:
+    'QR-based child check-in and check-out for camps, kids’ events, schools and churches. Role-based, safeguarding-first, works on any phone.',
+};
 
 const shell: React.CSSProperties = { minHeight: '100vh', background: '#F4F4F4', padding: 32 };
 const inner: React.CSSProperties = { maxWidth: 720, margin: '0 auto' };
 
 export default async function Home() {
   const current = await getCurrentUser();
-  if (!current) redirect('/sign-in');
+  // Unauthenticated visitors get the public marketing landing (the SaaS front door).
+  if (!current) return <MarketingLanding />;
 
   // Provisioned staff → land on their role's default home.
   if (current.staff) redirect(defaultHome(current.staff.role));
