@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { NavItem } from '@/lib/rbac';
 import LogoutButton from '@/components/logout-button';
+import AccountMenu from '@/app/(app)/dashboard/account-menu';
 
 // Tiny local icon set for the mobile bottom bar, keyed by NavItem.key. Each is a
 // 20x20 inline SVG using stroke="currentColor" so the colour follows the tab's
@@ -74,37 +75,34 @@ export default function AppShell({
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header
         style={{
-          minHeight: 48,
+          minHeight: narrow ? 56 : 48,
           background: '#161616',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 16px',
+          padding: narrow ? '0 12px 0 16px' : '0 16px',
           gap: 12,
           flex: 'none',
         }}
       >
-        <div style={{ color: '#fff', fontSize: 14, whiteSpace: 'nowrap' }}>
+        <div style={{ color: '#fff', fontSize: narrow ? 15 : 14, whiteSpace: 'nowrap' }}>
           <span style={{ fontWeight: 600 }}>SmartTag</span>{' '}
           <span style={{ fontWeight: 300 }}>Check-In</span>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-          <div style={{ textAlign: 'right', lineHeight: 1.2, minWidth: 0 }}>
-            <div
-              style={{
-                color: '#fff',
-                fontSize: 13,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                maxWidth: narrow ? 120 : 220,
-              }}
-            >
-              {userName}
-            </div>
-            {!narrow && <div style={{ color: '#A8A8A8', fontSize: 11 }}>{roleLabel}</div>}
+        {narrow ? (
+          <div style={{ marginLeft: 'auto' }}>
+            <AccountMenu userName={userName} roleLabel={roleLabel} />
           </div>
-          <LogoutButton />
-        </div>
+        ) : (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <div style={{ textAlign: 'right', lineHeight: 1.2, minWidth: 0 }}>
+              <div style={{ color: '#fff', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>
+                {userName}
+              </div>
+              <div style={{ color: '#A8A8A8', fontSize: 11 }}>{roleLabel}</div>
+            </div>
+            <LogoutButton />
+          </div>
+        )}
       </header>
 
       {narrow ? (

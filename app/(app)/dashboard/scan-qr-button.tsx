@@ -7,7 +7,15 @@ import jsQR from 'jsqr';
 // QR frame with jsQR, and feeds the decoded token into the same lookup as manual search.
 // Works cross-device (iPhone/Safari, Android, laptop webcam) — unlike Web NFC. Requires
 // HTTPS + camera permission; falls back gracefully when neither is available.
-export default function ScanQrButton({ onScan }: { onScan: (token: string) => void }) {
+export default function ScanQrButton({
+  onScan,
+  variant = 'default',
+  label = 'Scan QR',
+}: {
+  onScan: (token: string) => void;
+  variant?: 'default' | 'bar';
+  label?: string;
+}) {
   const [supported, setSupported] = useState(false);
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -85,24 +93,30 @@ export default function ScanQrButton({ onScan }: { onScan: (token: string) => vo
     }
   }
 
+  const bar = variant === 'bar';
+
   if (!supported) {
     return (
-      <span style={{ fontSize: 12, color: '#8D8D8D', alignSelf: 'center' }}>
+      <span style={{ fontSize: bar ? 13 : 12, color: '#8D8D8D', alignSelf: 'center' }}>
         QR scan needs a camera — use search
       </span>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div style={bar ? { width: '100%' } : { display: 'flex', flexDirection: 'column', gap: 4 }}>
       <button
         type="button"
         onClick={start}
-        style={{ height: 48, padding: '0 20px', background: '#0F62FE', color: '#fff', border: 'none', fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}
+        style={
+          bar
+            ? { width: '100%', height: 44, background: '#0F62FE', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer' }
+            : { height: 48, padding: '0 20px', background: '#0F62FE', color: '#fff', border: 'none', fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }
+        }
       >
-        Scan QR
+        {label}
       </button>
-      {err && <span style={{ fontSize: 12, color: '#DA1E28', maxWidth: 220 }}>{err}</span>}
+      {err && <span style={{ fontSize: 12, color: '#DA1E28', maxWidth: 220, display: 'block', marginTop: 4 }}>{err}</span>}
 
       {open && (
         <div

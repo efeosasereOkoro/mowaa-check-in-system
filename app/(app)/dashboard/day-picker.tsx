@@ -8,6 +8,7 @@ export type DayItem = {
   dayNumber: number;
   short: string; // "Day 3"
   long: string; // "Thursday 6 August 2026"
+  shortDate: string; // "Wed 1 Jul 2026" (narrow day-line subtitle)
   full: string; // "Day 3 — 6 Aug 2026" (dropdown + mobile button)
   isCurrent: boolean;
 };
@@ -124,28 +125,57 @@ export default function DayPicker({ items, selectedId }: { items: DayItem[]; sel
     );
 
   if (narrow) {
+    // Compact one-row day line: day name + short date on the left, a 44px stepper on
+    // the right. No dropdown (it only restated the title). Go-to-today + notice stay
+    // below when you're viewing another day.
+    const navCell = (to: DayItem | null, glyph: string, sharedLeft: boolean) => {
+      const enabled = !!to;
+      const style: React.CSSProperties = {
+        width: 44,
+        height: 44,
+        flex: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#fff',
+        border: '1px solid #E0E0E0',
+        ...(sharedLeft ? { borderLeft: 'none' } : {}),
+        color: enabled ? '#161616' : '#A8A8A8',
+        fontSize: 18,
+        textDecoration: 'none',
+        cursor: enabled ? 'pointer' : 'default',
+      };
+      return enabled ? (
+        <Link href={`/dashboard?day=${to!.id}`} style={style} aria-label={glyph === '‹' ? 'Previous day' : 'Next day'}>
+          {glyph}
+        </Link>
+      ) : (
+        <span style={style} aria-disabled="true">
+          {glyph}
+        </span>
+      );
+    };
+
     return (
       <div>
-        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>{selected.short}</h1>
-        <div style={{ fontSize: 15, color: '#525252', margin: '2px 0 12px' }}>{selected.long}</div>
-
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          {step(prev, '‹', 44, false)}
-          <div ref={ddRef} style={{ position: 'relative', flex: 1 }}>
-            <button
-              onClick={() => setOpen((o) => !o)}
-              style={{ width: '100%', height: 44, background: '#fff', border: '1px solid #E0E0E0', padding: '0 12px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
-            >
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.full}</span>
-              <span style={{ fontSize: 10, flex: 'none' }}>{CARET}</span>
-            </button>
-            {open && panel}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {selected.short}
+            </div>
+            <div style={{ fontSize: 13, color: '#525252' }}>
+              {selected.shortDate}
+              {isCurrent ? ' · today' : ''}
+            </div>
           </div>
-          {step(next, '›', 44, false)}
+          <div style={{ display: 'flex', flex: 'none' }}>
+            {navCell(prev, '‹', false)}
+            {navCell(next, '›', true)}
+          </div>
         </div>
 
         {!isCurrent && current && (
-          <Link href={`/dashboard?day=${current.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 44, background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none', marginBottom: 16 }}>
+          <Link href={`/dashboard?day=${current.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 44, background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none', marginBottom: 12 }}>
             Go to today
           </Link>
         )}

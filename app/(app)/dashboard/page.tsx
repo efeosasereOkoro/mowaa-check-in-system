@@ -5,6 +5,7 @@ import { getEventDaysList, getDayRoster, type Counters } from '@/lib/dashboard';
 import ChildLookup from './child-lookup';
 import Roster from './roster';
 import DayPicker, { type DayItem } from './day-picker';
+import DesktopOnly from './desktop-only';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,12 @@ function longDate(startsAt: Date): string {
   });
 }
 
+function shortDate(startsAt: Date): string {
+  return new Date(startsAt)
+    .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Lagos' })
+    .replace(/,/g, '');
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
   const staff = await requireRole(['receptionist', 'admin']);
   const { day: dayParam } = await searchParams;
@@ -40,23 +47,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dayNumber: d.dayNumber,
     short: d.dayNumber === 0 ? d.label ?? `Day ${d.dayNumber}` : `Day ${d.dayNumber}`,
     long: longDate(d.startsAt),
+    shortDate: shortDate(d.startsAt),
     full: d.label ?? `Day ${d.dayNumber}`,
     isCurrent: current?.id === d.id,
   }));
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Attendance console</div>
-        {staff.role === 'admin' && (
-          <Link
-            href="/children"
-            style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 16px', background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none' }}
-          >
-            + Register a child
-          </Link>
-        )}
-      </div>
+      <DesktopOnly>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Attendance console</div>
+          {staff.role === 'admin' && (
+            <Link
+              href="/children"
+              style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 16px', background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none' }}
+            >
+              + Register a child
+            </Link>
+          )}
+        </div>
+      </DesktopOnly>
 
       {selectedId ? (
         <DayPicker items={dayItems} selectedId={selectedId} />
@@ -64,22 +74,28 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 16px' }}>Dashboard</h1>
       )}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-        <div style={tile}><div style={tileLabel}>Registered</div><div style={tileNum}>{counters.total}</div></div>
-        <div style={tile}><div style={tileLabel}>On-site</div><div style={{ ...tileNum, color: '#0E6027' }}>{counters.checkedIn}</div></div>
-        <div style={tile}><div style={tileLabel}>Checked out</div><div style={tileNum}>{counters.checkedOut}</div></div>
-        <div style={tile}><div style={tileLabel}>Not arrived</div><div style={tileNum}>{counters.notArrived}</div></div>
-      </div>
+      <DesktopOnly>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+          <div style={tile}><div style={tileLabel}>Registered</div><div style={tileNum}>{counters.total}</div></div>
+          <div style={tile}><div style={tileLabel}>On-site</div><div style={{ ...tileNum, color: '#0E6027' }}>{counters.checkedIn}</div></div>
+          <div style={tile}><div style={tileLabel}>Checked out</div><div style={tileNum}>{counters.checkedOut}</div></div>
+          <div style={tile}><div style={tileLabel}>Not arrived</div><div style={tileNum}>{counters.notArrived}</div></div>
+        </div>
+      </DesktopOnly>
 
       {isCurrent && (
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Find a child</div>
+        <div style={{ marginBottom: 14 }}>
+          <DesktopOnly>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Find a child</div>
+          </DesktopOnly>
           <ChildLookup isAdmin={staff.role === 'admin'} />
         </div>
       )}
 
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Roster</div>
-      <Roster roster={roster} />
+      <DesktopOnly>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Roster</div>
+      </DesktopOnly>
+      <Roster roster={roster} actionBar={isCurrent} />
     </div>
   );
 }
