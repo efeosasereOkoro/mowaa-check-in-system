@@ -15,6 +15,7 @@ import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } fro
 export type CollapsibleRow = {
   key: string;
   primary: ReactNode; // Name cell
+  secondary?: ReactNode; // optional lines rendered under `primary`
   status: ReactNode; // right priority cell (status / action / short value)
   detail: ReactNode; // revealed when expanded — put "act" links/buttons here
   rowStyle?: CSSProperties; // summary <tr> extras (e.g. suspended background)
@@ -26,12 +27,14 @@ const th: CSSProperties = { textAlign: 'left', fontSize: 12, fontWeight: 600, pa
 export default function CollapsibleTable({
   desktop,
   rows,
+  primaryHeader = 'Name',
   statusHeader = 'Status',
   statusWidth = 118,
   empty,
 }: {
   desktop: ReactNode;
   rows: CollapsibleRow[];
+  primaryHeader?: string;
   statusHeader?: string;
   statusWidth?: number;
   empty: string;
@@ -55,7 +58,7 @@ export default function CollapsibleTable({
       <table style={{ borderCollapse: 'collapse', width: '100%', display: 'block' }}>
         <thead style={{ display: 'block' }}>
           <tr style={{ display: 'flex', alignItems: 'center', background: '#E0E0E0' }}>
-            <th style={{ ...th, flex: 1, minWidth: 0 }}>Name</th>
+            <th style={{ ...th, flex: 1, minWidth: 0 }}>{primaryHeader}</th>
             <th style={{ ...th, width: statusWidth, boxSizing: 'border-box', flex: 'none' }}>{statusHeader}</th>
             <th style={{ ...th, width: 34, flex: 'none' }} aria-hidden="true" />
           </tr>
@@ -88,8 +91,9 @@ export default function CollapsibleTable({
                   }}
                   style={{ display: 'flex', alignItems: 'center', minHeight: 44, borderTop: '1px solid #E0E0E0', cursor: 'pointer', background: '#fff', ...r.rowStyle }}
                 >
-                  <td style={{ fontSize: 14, padding: '10px 12px', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...r.primaryStyle }}>
-                    {r.primary}
+                  <td style={{ fontSize: 14, padding: '10px 12px', flex: 1, minWidth: 0, ...r.primaryStyle }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.primary}</div>
+                    {r.secondary != null && <div style={{ marginTop: 3 }}>{r.secondary}</div>}
                   </td>
                   <td style={{ padding: '10px 12px', width: statusWidth, boxSizing: 'border-box', flex: 'none', whiteSpace: 'nowrap' }}>{r.status}</td>
                   <td style={{ width: 34, flex: 'none', textAlign: 'center', fontSize: 10, color: '#525252' }}>{open ? '▲' : '▼'}</td>

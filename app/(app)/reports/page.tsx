@@ -1,27 +1,25 @@
+import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList } from '@/lib/dashboard';
 import { getAttendanceReport, getEndOfDayFlags } from '@/lib/reports';
+import { MobileOnly, DesktopOnly } from '@/components/viewport';
 import ReportDaySelect, { type DayOption } from './report-day-select';
 import AttendanceTable from './attendance-table';
+import ExportSheet from './export-sheet';
 
 export const dynamic = 'force-dynamic';
 
-const exportBtn: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  height: 40,
-  padding: '0 16px',
-  background: '#0F62FE',
-  color: '#fff',
-  fontSize: 14,
-  textDecoration: 'none',
-};
-const exportBtnAlt: React.CSSProperties = { ...exportBtn, background: '#fff', color: '#0F62FE', border: '1px solid #0F62FE' };
+const exportBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', height: 40, padding: '0 16px', background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none' };
+const exportBtnSecondary: React.CSSProperties = { ...exportBtn, background: '#fff', color: '#161616', border: '1px solid #161616' };
 
 function dayShort(dayNumber: number, label: string | null): string {
   if (dayNumber === 0) return label ?? 'Pre-event test day';
   return label ?? `Day ${dayNumber}`;
+}
+
+function Dot({ color }: { color: string }) {
+  return <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flex: 'none' }} />;
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
@@ -35,6 +33,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const selected = isValid ? (dayParam as string) : current?.id ?? 'all';
   const dayId = selected === 'all' ? null : selected;
   const selectedDay = dayId ? days.find((d) => d.id === dayId) ?? null : null;
+  const dayName = selectedDay ? dayShort(selectedDay.dayNumber, selectedDay.label) : 'All days';
 
   const options: DayOption[] = [
     { value: 'all', label: 'All days' },
@@ -43,67 +42,80 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   const rows = await getAttendanceReport(staff.id, dayId);
   const flags = dayId ? await getEndOfDayFlags(staff.id, dayId) : null;
-
   const allDays = dayId === null;
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Admin</div>
-      <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 20px' }}>Reports</h1>
-
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 12, color: '#525252', marginBottom: 6 }}>Event day</div>
-          <ReportDaySelect options={options} value={selected} />
+      <MobileOnly>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.2 }}>Reports</div>
+          <div style={{ fontSize: 13, color: '#525252', marginTop: 2 }}>{rows.length} events</div>
         </div>
-        <a href={`/api/reports/attendance?day=${selected}`} style={exportBtn}>
-          Export attendance (CSV)
-        </a>
-        <a href="/api/reports/register" style={exportBtnAlt}>
-          Export register (CSV)
-        </a>
+      </MobileOnly>
+      <DesktopOnly>
+        <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 20px' }}>
+          Reports <span style={{ color: '#525252' }}>· {dayName}</span>
+        </h1>
+      </DesktopOnly>
+
+      <div style={{ marginBottom: 14 }}>
+        <ReportDaySelect options={options} value={selected} />
       </div>
 
-      {/* End-of-day flags (FR-18) — only meaningful for a single day */}
+      <DesktopOnly>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
+          <a href={`/api/reports/attendance?day=${selected}`} style={exportBtn}>Export attendance (CSV)</a>
+          <a href="/api/reports/register" style={exportBtnSecondary}>Export register (CSV)</a>
+        </div>
+      </DesktopOnly>
+
       {flags && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
-          <div style={{ flex: '1 1 320px', background: '#fff', border: '1px solid #E0E0E0', borderLeft: `3px solid ${flags.stillCheckedIn.length ? '#F1C21B' : '#24A148'}`, padding: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              Still checked in ({flags.stillCheckedIn.length})
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+          <div style={{ flex: '1 1 320px', background: '#fff', border: '1px solid #E0E0E0', padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 15, fontWeight: 600 }}>Still checked in</span>
+              <span style={{ fontSize: 13, color: '#525252' }}>{flags.stillCheckedIn.length}</span>
             </div>
-            {flags.stillCheckedIn.length === 0 ? (
-              <div style={{ fontSize: 13, color: '#525252' }}>Everyone who arrived has been checked out. ✓</div>
-            ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#525252', marginBottom: flags.stillCheckedIn.length ? 10 : 0 }}>
+              <Dot color={flags.stillCheckedIn.length ? '#8D6E00' : '#0E6027'} />
+              {flags.stillCheckedIn.length ? 'Not everyone has been checked out' : 'Everyone who arrived has been checked out'}
+            </div>
+            {flags.stillCheckedIn.length > 0 && (
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
                 {flags.stillCheckedIn.map((s) => (
                   <li key={s.child} style={{ marginBottom: 2 }}>
-                    {s.child}
-                    {s.tag ? <span style={{ color: '#8D8D8D' }}> · {s.tag}</span> : null}
+                    <span style={{ color: '#0F62FE' }}>{s.child}</span>
+                    {s.tag ? <span style={{ color: '#8D8D8D', fontFamily: 'monospace' }}> · {s.tag}</span> : null}
                     <span style={{ color: '#8D8D8D' }}> · in {s.inAt}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <div style={{ flex: '1 1 220px', background: '#fff', border: '1px solid #E0E0E0', borderLeft: `3px solid ${flags.emergencyCount ? '#DA1E28' : '#E0E0E0'}`, padding: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Emergency notes today</div>
-            <div style={{ fontSize: 32, fontWeight: 300, color: flags.emergencyCount ? '#DA1E28' : '#161616' }}>
-              {flags.emergencyCount}
+          <div style={{ flex: '1 1 220px', background: '#fff', border: '1px solid #E0E0E0', padding: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Emergency notes today</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#525252', marginBottom: 8 }}>
+              <Dot color={flags.emergencyCount ? '#DA1E28' : '#A8A8A8'} />
+              {flags.emergencyCount ? 'Needs review' : 'None today'}
             </div>
+            <div style={{ fontSize: 32, fontWeight: 300, color: '#DA1E28' }}>{flags.emergencyCount}</div>
+            <Link href="/health" style={{ fontSize: 13, color: '#0F62FE' }}>
+              View →
+            </Link>
           </div>
         </div>
       )}
 
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-        Attendance {allDays ? '— all days' : selectedDay ? `— ${dayShort(selectedDay.dayNumber, selectedDay.label)}` : ''}
-        <span style={{ color: '#8D8D8D', fontWeight: 400 }}> ({rows.length})</span>
-      </div>
+      <DesktopOnly>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+          Attendance — {dayName}
+          <span style={{ color: '#8D8D8D', fontWeight: 400 }}> ({rows.length})</span>
+        </div>
+      </DesktopOnly>
 
       <AttendanceTable rows={rows} allDays={allDays} />
 
-      <p style={{ fontSize: 12, color: '#8D8D8D', marginTop: 12 }}>
-        Exports open in Excel. Attendance export follows the selected day; register export is the full children list.
-      </p>
+      <ExportSheet day={selected} />
     </div>
   );
 }

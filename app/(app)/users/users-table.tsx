@@ -1,12 +1,12 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { StaffListItem } from '@/lib/staff-admin';
 import type { StaffRole } from '@/lib/staff';
+import CollapsibleTable, { type CollapsibleRow } from '@/components/collapsible-table';
 import UserRowActions from './user-row-actions';
 
-// Local labels — client component must NOT import a *value* from lib/staff (it pulls
-// server-only auth/db into the client bundle and crashes the page). See D-027.
+// Local labels — client component must not import a *value* from lib/staff. D-027.
 const ROLE_LABELS: Record<StaffRole, string> = {
   admin: 'Admin',
   receptionist: 'Receptionist',
@@ -16,28 +16,34 @@ const ROLE_LABELS: Record<StaffRole, string> = {
 const th: React.CSSProperties = { textAlign: 'left', fontSize: 12, fontWeight: 600, padding: '10px 12px', whiteSpace: 'nowrap' };
 const td: React.CSSProperties = { fontSize: 14, padding: '10px 12px', borderTop: '1px solid #E0E0E0' };
 
-const roleChip: Record<string, React.CSSProperties> = {
-  admin: { background: '#D0E2FF', color: '#0043CE' },
-  receptionist: { background: '#E0E0E0', color: '#393939' },
-  health: { background: '#D9FBFB', color: '#005D5D' },
+const statusMeta: Record<StaffListItem['status'], { color: string; word: string }> = {
+  active: { color: '#0E6027', word: 'Active' },
+  invited: { color: '#8D6E00', word: 'Invited' },
+  suspended: { color: '#A2191F', word: 'Suspended' },
 };
 
-function StatusLabel({ status, short }: { status: StaffListItem['status']; short: boolean }) {
-  if (status === 'active') return <span style={{ color: '#0E6027', fontSize: 13 }}>● Active</span>;
-  if (status === 'suspended') return <span style={{ color: '#A2191F', fontSize: 13 }}>● Suspended</span>;
-  return <span style={{ color: '#8D6E00', fontSize: 13 }}>{short ? '● Invited' : '● Invited — awaiting first login'}</span>;
-}
-
-function RoleChip({ role }: { role: StaffRole }) {
+function StatusDot({ status }: { status: StaffListItem['status'] }) {
+  const m = statusMeta[status];
   return (
-    <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 2, ...(roleChip[role] ?? {}) }}>{ROLE_LABELS[role]}</span>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: m.color }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: m.color, flex: 'none' }} />
+      {m.word}
+    </span>
   );
 }
 
-export default function UsersTable({ users, currentUserId }: { users: StaffListItem[]; currentUserId: string }) {
-  const [openId, setOpenId] = useState<string | null>(null);
+const Magnifier = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8D8D8D" strokeWidth={1.7} style={{ flex: 'none' }}>
+    <circle cx="7" cy="7" r="4.5" />
+    <line x1="10.5" y1="10.5" x2="14" y2="14" strokeLinecap="round" />
+  </svg>
+);
 
-  // Same narrow detection as the app shell: SSR/first render = desktop, adjust on mount.
+type Filter = 'all' | StaffRole;
+
+export default function UsersTable({ users, currentUserId }: { users: StaffListItem[]; currentUserId: string }) {
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const check = () => setNarrow(window.innerWidth < 672);
@@ -46,87 +52,25 @@ export default function UsersTable({ users, currentUserId }: { users: StaffListI
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  if (narrow) {
-    return (
-      <div style={{ background: '#fff', border: '1px solid #E0E0E0' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', display: 'block' }}>
-          <thead style={{ display: 'block' }}>
-            <tr style={{ display: 'flex', alignItems: 'center', background: '#E0E0E0' }}>
-              <th style={{ ...th, flex: 1, minWidth: 0 }}>Name</th>
-              <th style={{ ...th, width: 104, boxSizing: 'border-box', flex: 'none' }}>Status</th>
-              <th style={{ ...th, width: 34, flex: 'none' }} aria-hidden="true" />
-            </tr>
-          </thead>
-          <tbody style={{ display: 'block' }}>
-            {users.length === 0 && (
-              <tr style={{ display: 'block' }}>
-                <td style={{ ...td, color: '#8D8D8D', display: 'block' }} colSpan={3}>
-                  No users yet.
-                </td>
-              </tr>
-            )}
-            {users.map((u) => {
-              const isSelf = u.id === currentUserId;
-              const suspended = u.status === 'suspended';
-              const open = openId === u.id;
-              const detailId = `user-detail-${u.id}`;
-              const toggle = () => setOpenId(open ? null : u.id);
-              return (
-                <Fragment key={u.id}>
-                  <tr
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={open}
-                    aria-controls={detailId}
-                    onClick={toggle}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        toggle();
-                      }
-                    }}
-                    style={{ display: 'flex', alignItems: 'center', minHeight: 44, borderTop: '1px solid #E0E0E0', cursor: 'pointer', background: suspended ? '#FAFAFA' : '#fff' }}
-                  >
-                    <td style={{ fontSize: 14, padding: '10px 12px', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: suspended ? '#8D8D8D' : undefined }}>
-                      {u.name}
-                      {isSelf && <span style={{ color: '#8D8D8D', fontSize: 12 }}> (you)</span>}
-                    </td>
-                    <td style={{ padding: '10px 8px', width: 104, boxSizing: 'border-box', flex: 'none', whiteSpace: 'nowrap' }}>
-                      <StatusLabel status={u.status} short />
-                    </td>
-                    <td style={{ width: 34, flex: 'none', textAlign: 'center', fontSize: 10, color: '#525252' }}>{open ? '▲' : '▼'}</td>
-                  </tr>
-                  {open && (
-                    <tr id={detailId} style={{ display: 'block', background: '#F4F4F4', borderTop: '1px solid #E0E0E0' }}>
-                      <td style={{ display: 'block', padding: '4px 12px 12px' }} colSpan={3}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 16px', fontSize: 13 }}>
-                          <span style={{ color: '#525252' }}>Email</span>
-                          <span style={{ color: '#161616', overflowWrap: 'anywhere' }}>{u.email}</span>
-                          <span style={{ color: '#525252' }}>Role</span>
-                          <span>
-                            <RoleChip role={u.role} />
-                          </span>
-                        </div>
-                        <div style={{ marginTop: 12 }}>
-                          {isSelf ? (
-                            <span style={{ fontSize: 12, color: '#8D8D8D' }}>You cannot change your own access</span>
-                          ) : (
-                            <UserRowActions userId={u.id} suspended={suspended} isSelf={false} full />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
+  const searched = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    if (!ql) return users;
+    return users.filter((u) => u.name.toLowerCase().includes(ql) || u.email.toLowerCase().includes(ql));
+  }, [users, q]);
 
-  return (
+  const counts = useMemo(
+    () => ({
+      all: searched.length,
+      admin: searched.filter((u) => u.role === 'admin').length,
+      receptionist: searched.filter((u) => u.role === 'receptionist').length,
+      health: searched.filter((u) => u.role === 'health').length,
+    }),
+    [searched],
+  );
+
+  const displayed = filter === 'all' ? searched : searched.filter((u) => u.role === filter);
+
+  const desktop = (
     <div style={{ background: '#fff', border: '1px solid #E0E0E0', overflowX: 'auto' }}>
       <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 640 }}>
         <thead>
@@ -139,25 +83,21 @@ export default function UsersTable({ users, currentUserId }: { users: StaffListI
           </tr>
         </thead>
         <tbody>
-          {users.length === 0 && (
+          {searched.length === 0 && (
             <tr>
-              <td style={{ ...td, color: '#8D8D8D' }} colSpan={5}>
-                No users yet.
-              </td>
+              <td style={{ ...td, color: '#8D8D8D' }} colSpan={5}>No users match.</td>
             </tr>
           )}
-          {users.map((u) => (
+          {searched.map((u) => (
             <tr key={u.id} style={u.status === 'suspended' ? { background: '#FAFAFA' } : undefined}>
               <td style={{ ...td, color: u.status === 'suspended' ? '#8D8D8D' : undefined }}>
                 {u.name}
                 {u.id === currentUserId && <span style={{ color: '#8D8D8D', fontSize: 12 }}> (you)</span>}
               </td>
               <td style={{ ...td, color: '#525252' }}>{u.email}</td>
-              <td style={td}>
-                <RoleChip role={u.role} />
-              </td>
-              <td style={td}>
-                <StatusLabel status={u.status} short={false} />
+              <td style={{ ...td, fontSize: 13 }}>{ROLE_LABELS[u.role]}</td>
+              <td style={{ ...td, fontSize: 13 }}>
+                <StatusDot status={u.status} />
               </td>
               <td style={td}>
                 <UserRowActions userId={u.id} suspended={u.status === 'suspended'} isSelf={u.id === currentUserId} />
@@ -166,6 +106,94 @@ export default function UsersTable({ users, currentUserId }: { users: StaffListI
           ))}
         </tbody>
       </table>
+    </div>
+  );
+
+  const mobileRows: CollapsibleRow[] = displayed.map((u) => {
+    const isSelf = u.id === currentUserId;
+    const suspended = u.status === 'suspended';
+    return {
+      key: u.id,
+      rowStyle: suspended ? { background: '#FAFAFA' } : undefined,
+      primaryStyle: suspended ? { color: '#8D8D8D' } : undefined,
+      primary: (
+        <span style={{ fontSize: 15 }}>
+          {u.name}
+          {isSelf && <span style={{ color: '#8D8D8D', fontSize: 12 }}> (you)</span>}
+        </span>
+      ),
+      secondary: (
+        <div style={{ fontSize: 12, color: '#525252', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <StatusDot status={u.status} /> · {u.email}
+        </div>
+      ),
+      status: <span style={{ fontSize: 13 }}>{ROLE_LABELS[u.role]}</span>,
+      detail: isSelf ? (
+        <span style={{ fontSize: 12, color: '#8D8D8D' }}>You cannot change your own access</span>
+      ) : (
+        <UserRowActions userId={u.id} suspended={suspended} isSelf={false} full />
+      ),
+    };
+  });
+
+  const cells: { key: Filter; label: string; count: number }[] = [
+    { key: 'all', label: 'ALL', count: counts.all },
+    { key: 'admin', label: 'ADMIN', count: counts.admin },
+    { key: 'receptionist', label: 'RECEPTION', count: counts.receptionist },
+    { key: 'health', label: 'HEALTH', count: counts.health },
+  ];
+
+  return (
+    <div>
+      <div style={{ height: 44, background: '#fff', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', marginBottom: narrow ? 14 : 12 }}>
+        <Magnifier />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name or email"
+          style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 14 }}
+        />
+      </div>
+
+      {narrow && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#fff', border: '1px solid #E0E0E0', marginBottom: 14 }}>
+          {cells.map((c, i) => {
+            const selected = filter === c.key;
+            const disabled = c.count === 0;
+            const countColor = disabled ? '#8D8D8D' : selected ? '#0F62FE' : '#161616';
+            const labelColor = disabled ? '#8D8D8D' : selected ? '#0F62FE' : '#525252';
+            return (
+              <button
+                key={c.key}
+                type="button"
+                disabled={disabled}
+                tabIndex={disabled ? -1 : 0}
+                onClick={disabled ? undefined : () => setFilter(c.key)}
+                style={{
+                  height: 60,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  borderTop: 'none',
+                  borderRight: 'none',
+                  borderLeft: i === 0 ? 'none' : '1px solid #E0E0E0',
+                  borderBottom: selected ? '3px solid #0F62FE' : '3px solid transparent',
+                  background: disabled ? '#FAFAFA' : selected ? '#EDF5FF' : '#fff',
+                  opacity: disabled ? 0.5 : 1,
+                  cursor: disabled ? 'default' : 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 20, fontWeight: 600, lineHeight: 1, color: countColor }}>{c.count}</span>
+                <span style={{ fontSize: 10, letterSpacing: '.04em', color: labelColor }}>{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <CollapsibleTable desktop={desktop} rows={mobileRows} statusHeader="Role" statusWidth={112} empty="No users match." />
     </div>
   );
 }

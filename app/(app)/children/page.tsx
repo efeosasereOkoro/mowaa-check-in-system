@@ -3,10 +3,22 @@ import { requireRole } from '@/lib/require-role';
 import { listChildren } from '@/lib/children';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEmergencyChildIdsToday } from '@/lib/medical';
+import { MobileOnly, DesktopOnly } from '@/components/viewport';
 import AddChildForm from './add-child-form';
+import AddChildSheet from './add-child-sheet';
 import ChildrenTable, { type ChildRow } from './children-table';
 
 export const dynamic = 'force-dynamic';
+
+const QrGlyph = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.4} style={{ flex: 'none' }}>
+    <rect x="1" y="1" width="4" height="4" rx="0.5" />
+    <rect x="9" y="1" width="4" height="4" rx="0.5" />
+    <rect x="1" y="9" width="4" height="4" rx="0.5" />
+    <rect x="9" y="9" width="2" height="2" />
+    <rect x="12" y="12" width="1" height="1" />
+  </svg>
+);
 
 export default async function ChildrenPage() {
   const staff = await requireRole(['admin']);
@@ -28,21 +40,38 @@ export default async function ChildrenPage() {
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Register</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Children</h1>
-        <Link href="/cards" target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
-          Print QR ID cards →
-        </Link>
-      </div>
+      <MobileOnly>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.2 }}>Children</div>
+            <div style={{ fontSize: 13, color: '#525252', marginTop: 2 }}>{kids.length} registered</div>
+          </div>
+          <Link
+            href="/cards"
+            target="_blank"
+            style={{ flex: 'none', height: 36, padding: '0 12px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+          >
+            <QrGlyph />
+            QR cards
+          </Link>
+        </div>
+      </MobileOnly>
+      <DesktopOnly>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Children</h1>
+          <Link href="/cards" target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
+            Print QR ID cards →
+          </Link>
+        </div>
+      </DesktopOnly>
 
-      <AddChildForm />
+      <DesktopOnly>
+        <AddChildForm />
+      </DesktopOnly>
 
       <ChildrenTable children={childRows} />
 
-      <p style={{ fontSize: 12, color: '#8D8D8D', marginTop: 12 }}>
-        {kids.length} registered. Edit/delete, pickup persons, tags and photo come next (E4-S2…S6).
-      </p>
+      <AddChildSheet />
     </div>
   );
 }
