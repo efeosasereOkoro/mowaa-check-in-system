@@ -7,11 +7,12 @@ const authMiddleware = auth.middleware({ loginUrl: '/sign-in' });
 // Server-action / form / API POSTs pass through here — running the auth middleware
 // on those POSTs broke Server Actions ("page couldn't load"). Auth on those is still
 // enforced inside the actions/handlers themselves via requireStaff/requireRole.
+// Public pages that must not be auth-gated (the landing redirects signed-in users itself).
+const PUBLIC_PATHS = new Set(['/', '/terms', '/privacy']);
+
 export default function middleware(req: NextRequest) {
   if (req.method !== 'GET') return NextResponse.next();
-  // The root path is the public marketing landing — the page itself redirects
-  // signed-in users to their home, so it must not be gated by auth here.
-  if (req.nextUrl.pathname === '/') return NextResponse.next();
+  if (PUBLIC_PATHS.has(req.nextUrl.pathname)) return NextResponse.next();
   return authMiddleware(req);
 }
 

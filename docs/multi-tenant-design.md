@@ -71,11 +71,11 @@ Create (self-serve), **suspend** (block all access — mirror the staff-suspend 
 ## 10. Phased rollout (maps to E12 stories)
 1. **S1 landing** ✅ (done). 2. **This doc + spike** ✅. 3. **S2** tenancy foundation (tables, `tenant_id`, backfill, `app_tenant_id()`). 4. **S3** RLS scoping + isolation suite — *gate before any tenant-facing UI*. 5. **S4** membership + resolution. 6. **S5** public org signup. 7. **S6** per-tenant events + timezone. 8. **S7** settings/branding. 9. **S8** onboarding. 10. **S9** operator console. 11. **S10** compliance. 12. **S11** billing (optional).
 
-## 11. Open decisions (confirm before S2)
-- Membership: **A (`staff.tenant_id`)** vs B (join table). *Lean A.*
-- URL: **path/implicit** vs subdomain. *Lean path first.*
-- Billing: yes/no, and when.
-- Tenant `slug` scheme + reserved names.
+## 11. Decisions — LOCKED (2026-07-31)
+- **Membership: one org per user** — `staff.tenant_id` (a person in two orgs = two staff rows keyed by email). No join table for v1.
+- **Tenant URL: path/implicit** — tenant resolved from the logged-in user's staff row; no URL change. Subdomains deferred (ties B-005).
+- **Billing: later** — not in v1 scope; E12-S11 stays optional/deferred.
+- Still to settle when building: tenant `slug` scheme + reserved names.
 
 ## 12. Risks
 - **Cross-tenant leakage** (the whole ballgame) — mitigated by "set the tenant GUC in one place," fail-closed `app_tenant_id()`, policies on **every** table, and the permanent isolation suite.

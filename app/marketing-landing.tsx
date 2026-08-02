@@ -201,8 +201,8 @@ export default function MarketingLanding() {
           <span>© {'2026'} SmartTag Check-In</span>
           <nav className="lp-footer-links" aria-label="Footer">
             <Link href="/sign-in">Sign in</Link>
-            <span>Privacy (coming soon)</span>
-            <span>Terms (coming soon)</span>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
           </nav>
         </div>
       </footer>
