@@ -7,8 +7,17 @@ import {
   integer,
   boolean,
   timestamp,
+  jsonb,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+
+// Auto-stamp tenant_id on insert from the acting staff member's tenant (E12-S2). The
+// column is NOT NULL but has this default, so existing insert code needs no changes.
+const tenantId = () =>
+  uuid('tenant_id')
+    .notNull()
+    .default(sql`app_tenant_id()`)
+    .references(() => tenants.id);
 
 /**
  * Child Check-In / Check-Out — core data model.
@@ -29,9 +38,24 @@ export const staffRole = pgEnum('staff_role', ['admin', 'receptionist', 'health'
 export const attendanceAction = pgEnum('attendance_action', ['check_in', 'check_out']);
 export const noteSeverity = pgEnum('note_severity', ['routine', 'incident', 'emergency']);
 
+// ---------- tenants (E12 multi-tenant SaaS) ----------
+// One row per organisation. Every tenant-scoped table carries a tenant_id FK to here;
+// RLS scopes rows by app_tenant_id() (E12-S3). One org per user (staff.tenant_id).
+export const tenants = pgTable('tenants', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  status: text('status').notNull().default('active'), // active | suspended
+  timezone: text('timezone').notNull().default('Africa/Lagos'), // per-tenant day-boundary tz
+  settings: jsonb('settings').notNull().default(sql`'{}'::jsonb`), // brand name, feature flags
+  plan: text('plan').notNull().default('free'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- staff (PRD `users`) ----------
 export const staff = pgTable('staff', {
   id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
   // Links to the Neon Auth user identity; populated when auth is wired in E2.
   authUserId: text('auth_user_id').unique(),
   name: text('name').notNull(),
@@ -44,17 +68,23 @@ export const staff = pgTable('staff', {
 });
 
 // ---------- event_days (GMT+1 admin-defined windows) ----------
-export const eventDays = pgTable('event_days', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  dayNumber: integer('day_number').notNull().unique(), // 1..5
-  label: text('label'),
-  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
-  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
-});
+export const eventDays = pgTable(
+  'event_days',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: tenantId(),
+    dayNumber: integer('day_number').notNull(), // unique per tenant (below)
+    label: text('label'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [uniqueIndex('event_days_tenant_day_number_key').on(table.tenantId, table.dayNumber)],
+);
 
 // ---------- children ----------
 export const children = pgTable('children', {
   id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   age: integer('age'),
@@ -76,13 +106,15 @@ export const tags = pgTable(
   'tags',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    code: text('code').notNull().unique(), // human tag number, e.g. TAG-001
-    nfcUid: text('nfc_uid').unique(), // NFC hardware UID; duplicates rejected (FR-6)
+    tenantId: tenantId(),
+    code: text('code').notNull(), // human tag number, e.g. TAG-001 (unique per tenant, below)
+    nfcUid: text('nfc_uid').unique(), // vestigial (NFC retired, D-026); kept for now (B-027)
     childId: uuid('child_id').references(() => children.id, { onDelete: 'set null' }),
     active: boolean('active').notNull().default(true), // deactivated on reassign (FR-6a)
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex('tags_tenant_code_key').on(table.tenantId, table.code),
     // At most one active tag per child.
     uniqueIndex('tags_one_active_per_child')
       .on(table.childId)
@@ -93,6 +125,7 @@ export const tags = pgTable(
 // ---------- pickup_persons ----------
 export const pickupPersons = pgTable('pickup_persons', {
   id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
   childId: uuid('child_id')
     .notNull()
     .references(() => children.id, { onDelete: 'cascade' }),
@@ -105,6 +138,7 @@ export const pickupPersons = pgTable('pickup_persons', {
 // ---------- attendance_log (append-only; triggers added in E1-S4) ----------
 export const attendanceLog = pgTable('attendance_log', {
   id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
   childId: uuid('child_id')
     .notNull()
     .references(() => children.id, { onDelete: 'restrict' }),
@@ -127,6 +161,7 @@ export const attendanceLog = pgTable('attendance_log', {
 // ---------- medical_notes (append-only; triggers added in E1-S4) ----------
 export const medicalNotes = pgTable('medical_notes', {
   id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
   childId: uuid('child_id')
     .notNull()
     .references(() => children.id, { onDelete: 'restrict' }),
