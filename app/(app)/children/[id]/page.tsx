@@ -2,12 +2,18 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/require-role';
 import { getChild } from '@/lib/children';
+import { getChildAttendance } from '@/lib/attendance';
+import { getChildMedical } from '@/lib/medical';
 import { listPickupPersons } from '@/lib/pickup-persons';
 import { listTagsForChild } from '@/lib/tags';
+import { AttendanceTable, MedicalNotesList } from '@/components/child-record';
 import EditChildForm from './edit-child-form';
 import TagSection from './tag-section';
 import PickupPersonsSection from './pickup-persons';
 import DeleteChildButton from './delete-child-button';
+
+const sectionStyle: React.CSSProperties = { marginTop: 24, borderTop: '1px solid #E0E0E0', paddingTop: 20 };
+const sectionH2: React.CSSProperties = { fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: '#161616' };
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +24,10 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
   if (!child) notFound();
   const pickups = await listPickupPersons(staff.id, id);
   const childTags = await listTagsForChild(staff.id, id);
+  const attendance = await getChildAttendance(staff.id, id);
+  const medical = await getChildMedical(staff.id, id);
+  // Medical notes are admin+health only (RLS also enforces this); gate the UI to match.
+  const canSeeHealth = staff.role === 'admin' || staff.role === 'health';
 
   return (
     <div style={{ maxWidth: 720 }}>
@@ -33,6 +43,9 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
         </h1>
         <Link href={`/cards?child=${child.id}`} target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
           Print QR card →
+        </Link>
+        <Link href={`/child-report?child=${child.id}`} target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
+          Generate report →
         </Link>
       </div>
 
@@ -68,6 +81,18 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
           phone: p.phone,
         }))}
       />
+
+      <section style={sectionStyle}>
+        <h2 style={sectionH2}>Attendance</h2>
+        <AttendanceTable days={attendance} />
+      </section>
+
+      {canSeeHealth && (
+        <section style={sectionStyle}>
+          <h2 style={sectionH2}>Health record</h2>
+          <MedicalNotesList notes={medical?.notes ?? []} />
+        </section>
+      )}
 
       <div style={{ marginTop: 24, borderTop: '1px solid #E0E0E0', paddingTop: 20 }}>
         <div style={{ fontSize: 12, color: '#525252', marginBottom: 8 }}>Danger zone</div>

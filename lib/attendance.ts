@@ -17,6 +17,70 @@ function hhmm(v: unknown): string {
   return d.toLocaleTimeString('en-GB', { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit' });
 }
 
+function dmy(v: unknown): string {
+  const d = v instanceof Date ? v : new Date(String(v));
+  return d.toLocaleDateString('en-GB', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+export type ChildAttendanceDay = {
+  dayNumber: number;
+  dayLabel: string;
+  date: string | null;
+  inAt: string | null;
+  outAt: string | null;
+  collector: string | null;
+  override: boolean;
+};
+
+/**
+ * One child's full attendance history, one row per event day the child has records on
+ * (ordered by day). Folds the append-only log into a per-day summary: first check-in,
+ * last check-out + its collector snapshot, and whether any override happened that day.
+ * Runs under the caller's RLS (attendance_select: admin/receptionist/health, tenant-scoped).
+ */
+export async function getChildAttendance(staffId: string, childId: string): Promise<ChildAttendanceDay[]> {
+  return withStaffContext(staffId, async (tx) => {
+    const rows = await tx
+      .select({
+        dayNumber: eventDays.dayNumber,
+        dayLabel: eventDays.label,
+        action: attendanceLog.action,
+        occurredAt: attendanceLog.occurredAt,
+        collectorLabel: attendanceLog.collectorLabel,
+        isOverride: attendanceLog.isOverride,
+      })
+      .from(attendanceLog)
+      .innerJoin(eventDays, eq(eventDays.id, attendanceLog.eventDayId))
+      .where(eq(attendanceLog.childId, childId))
+      .orderBy(asc(eventDays.dayNumber), asc(attendanceLog.occurredAt));
+
+    const byDay = new Map<number, ChildAttendanceDay>();
+    for (const r of rows) {
+      const d =
+        byDay.get(r.dayNumber) ??
+        {
+          dayNumber: r.dayNumber,
+          dayLabel: r.dayLabel ?? `Day ${r.dayNumber}`,
+          date: null,
+          inAt: null,
+          outAt: null,
+          collector: null,
+          override: false,
+        };
+      if (!d.date) d.date = dmy(r.occurredAt);
+      if (r.action === 'check_in') {
+        if (!d.inAt) d.inAt = hhmm(r.occurredAt); // first check-in of the day
+      } else {
+        d.outAt = hhmm(r.occurredAt); // last check-out of the day
+        d.collector = r.collectorLabel;
+      }
+      if (r.isOverride) d.override = true;
+      byDay.set(r.dayNumber, d);
+    }
+    return [...byDay.values()];
+  });
+}
+
 // The event day whose GMT+1 window contains now(), or null (outside event hours).
 export async function getCurrentEventDay(staffId: string): Promise<EventDay | null> {
   return withStaffContext(staffId, async (tx) => {
