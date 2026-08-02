@@ -86,7 +86,7 @@ export default function LegalPage({
 
       <footer className="legal-footer">
         <div className="legal-footer-in">
-          <span>© 2026 SmartTag Check-In</span>
+          <span>© {new Date().getFullYear()} SmartTag Check-In</span>
           <nav aria-label="Footer">
             <Link href="/">Home</Link>
             <Link href="/privacy">Privacy</Link>

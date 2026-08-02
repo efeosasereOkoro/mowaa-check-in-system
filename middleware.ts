@@ -12,7 +12,9 @@ const PUBLIC_PATHS = new Set(['/', '/terms', '/privacy']);
 
 export default function middleware(req: NextRequest) {
   if (req.method !== 'GET') return NextResponse.next();
-  if (PUBLIC_PATHS.has(req.nextUrl.pathname)) return NextResponse.next();
+  // Normalise a trailing slash so /privacy/ is treated the same as /privacy.
+  const path = req.nextUrl.pathname.replace(/\/+$/, '') || '/';
+  if (PUBLIC_PATHS.has(path)) return NextResponse.next();
   return authMiddleware(req);
 }
 

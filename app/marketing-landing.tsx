@@ -198,7 +198,7 @@ export default function MarketingLanding() {
 
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-in">
-          <span>© {'2026'} SmartTag Check-In</span>
+          <span>© {new Date().getFullYear()} SmartTag Check-In</span>
           <nav className="lp-footer-links" aria-label="Footer">
             <Link href="/sign-in">Sign in</Link>
             <Link href="/privacy">Privacy</Link>
