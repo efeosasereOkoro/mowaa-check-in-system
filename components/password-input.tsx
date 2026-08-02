@@ -50,6 +50,7 @@ export function PasswordInput({
           width: '100%',
           height: 48,
           background: '#fff',
+          color: '#161616',
           border: 'none',
           borderBottom: '1px solid #8D8D8D',
           padding: '0 48px 0 16px',
