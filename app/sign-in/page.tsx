@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { authClient } from '@/lib/auth/client';
+import { PasswordInput } from '@/components/password-input';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -86,14 +88,20 @@ export default function SignInPage() {
           style={inputStyle}
         />
 
-        <label style={{ fontSize: 12, color: '#525252' }}>Password</label>
-        <input
-          type="password"
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <label htmlFor="password" style={{ fontSize: 12, color: '#525252' }}>
+            Password
+          </label>
+          <Link href="/forgot-password" style={{ fontSize: 12, color: '#0F62FE' }}>
+            Forgot password?
+          </Link>
+        </div>
+        <PasswordInput
+          id="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           required
           autoComplete="current-password"
-          style={inputStyle}
         />
 
         {error && (
