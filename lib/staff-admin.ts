@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { withStaffContext } from '@/lib/db-authenticated';
 import { staff } from '@/db/schema';
 import type { StaffRole } from '@/lib/staff';
+import { sendUserInviteEmail } from '@/lib/emails/user-invite';
 
 /**
  * Admin user management (B-011 / E2) — invite model, no public sign-up (D-013).
@@ -103,11 +104,13 @@ export async function createStaffUser(
   );
   if (existing[0]) return { error: 'A user with that email already exists.' };
 
+  const origin = await appOrigin();
+
   // Create the auth login. 200 → new identity; an "already exists" error is tolerated
   // (the person keeps their existing password; we still link the staff row by email).
   let authUserId: string | null = null;
   try {
-    const res = await fetch(`${await appOrigin()}/api/auth/sign-up/email`, {
+    const res = await fetch(`${origin}/api/auth/sign-up/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
@@ -128,5 +131,15 @@ export async function createStaffUser(
   } catch {
     return { error: 'The login was created but saving the staff record failed. Check the Users list before retrying.' };
   }
+
+  // Best-effort: email the new user their invite (role, sign-in link, temp credentials).
+  // Never fail user creation if email is down or unconfigured.
+  try {
+    await sendUserInviteEmail({ to: email, name, email, role, tempPassword: password, signInUrl: `${origin}/sign-in` });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('user invite email failed', e);
+  }
+
   return { ok: true };
 }
