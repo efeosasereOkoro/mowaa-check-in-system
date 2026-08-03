@@ -10,6 +10,7 @@ export type NewChildInput = {
   age: number | null;
   guardianName: string;
   guardianPhone: string;
+  guardianEmail: string | null;
   homeAddress: string | null;
   healthDetails: string | null;
 };
@@ -38,10 +39,11 @@ export async function listChildrenForCards(staffId: string): Promise<CardChild[]
   );
 }
 
-/** Insert a child. RLS (`children_insert`) permits this only for admins. */
+/** Insert a child. RLS (`children_insert`) permits this only for admins. Returns the new
+ * id and the auto-provisioned QR token (needed to email the guardian their QR). */
 export async function addChild(staffId: string, input: NewChildInput) {
   return withStaffContext(staffId, (tx) =>
-    tx.insert(children).values(input).returning({ id: children.id }),
+    tx.insert(children).values(input).returning({ id: children.id, qrToken: children.qrToken }),
   );
 }
 

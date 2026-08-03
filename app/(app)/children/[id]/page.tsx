@@ -57,6 +57,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
           age: child.age,
           guardianName: child.guardianName,
           guardianPhone: child.guardianPhone,
+          guardianEmail: child.guardianEmail,
           homeAddress: child.homeAddress,
           healthDetails: child.healthDetails,
         }}

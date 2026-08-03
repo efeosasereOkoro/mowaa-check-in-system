@@ -64,6 +64,13 @@
       "when": 1785461000000,
       "tag": "0008_tenant_scoped_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785462000000,
+      "tag": "0009_child_guardian_email",
+      "breakpoints": true
     }
   ]
 }
