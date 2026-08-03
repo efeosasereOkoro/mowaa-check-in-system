@@ -1,24 +1,20 @@
 // Provider-agnostic transactional email. Server-only by usage — imported only from server
-// actions; never import this from a client component (it reads env and would leak nothing
-// useful, but keep it server-side).
+// actions; never import this from a client component (it reads secrets from env).
 //
-// No provider is wired yet — the client will choose one (Resend / SMTP). Until
-// EMAIL_PROVIDER and its credentials are set, sendEmail() logs what it *would* send and
-// returns { skipped: true }, so callers are complete in code and nothing (e.g. child
-// registration) ever blocks or fails because email isn't configured.
+// Configure via env (never commit secrets):
+//   EMAIL_PROVIDER = brevo   (unset → log-only stub, so nothing blocks if email is off)
+//   BREVO_API_KEY  = <Brevo transactional API key>   (Brevo → SMTP & API → API Keys)
+//   EMAIL_FROM     = "MOWAA Roots Summer School <noreply@your-verified-domain>"
+//                    — MUST be a sender/domain verified in Brevo, or sends are rejected.
 //
-// To wire a provider later, implement the matching branch below and set EMAIL_PROVIDER:
-//   - Resend: `resend.emails.send({ from, to, subject, html, text, attachments })`
-//             (attachments: { filename, content: base64 | Buffer, contentType, content_id? })
-//   - SMTP:   nodemailer transport.sendMail({ from, to, subject, html, text, attachments })
-//             (attachments: { filename, content: Buffer, contentType, cid })
-// EMAIL_FROM is the verified sender (e.g. "SmartTag Check-In <noreply@yourdomain>").
+// Note on images: Brevo's transactional API sends attachments as real attachments (no inline
+// cid), so the QR arrives as an attached PNG. Callers should word emails accordingly.
 
 export type EmailAttachment = {
   filename: string;
   content: Buffer;
   contentType: string;
-  /** Content-ID for referencing this attachment inline via <img src="cid:..."> */
+  /** Content-ID for inline <img src="cid:..."> — honoured only by providers that support it. */
   cid?: string;
 };
 
@@ -32,6 +28,53 @@ export type SendEmailInput = {
 
 export type SendEmailResult = { ok: boolean; skipped?: boolean; error?: string };
 
+// Parse EMAIL_FROM as either "Name <email>" or a bare "email".
+function parseSender(from: string): { name?: string; email: string } {
+  const m = from.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
+  if (m) return { name: m[1] || undefined, email: m[2].trim() };
+  return { email: from.trim() };
+}
+
+async function sendViaBrevo(input: SendEmailInput): Promise<SendEmailResult> {
+  const apiKey = process.env.BREVO_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    // eslint-disable-next-line no-console
+    console.warn('[email:brevo] BREVO_API_KEY and/or EMAIL_FROM not set — skipping send.');
+    return { ok: false, skipped: true, error: 'brevo not configured' };
+  }
+
+  const payload = {
+    sender: parseSender(from),
+    to: [{ email: input.to }],
+    subject: input.subject,
+    htmlContent: input.html,
+    ...(input.text ? { textContent: input.text } : {}),
+    ...(input.attachments?.length
+      ? { attachment: input.attachments.map((a) => ({ name: a.filename, content: a.content.toString('base64') })) }
+      : {}),
+  };
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      // eslint-disable-next-line no-console
+      console.error(`[email:brevo] send failed (${res.status}): ${detail.slice(0, 300)}`);
+      return { ok: false, error: `brevo ${res.status}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[email:brevo] request failed', e);
+    return { ok: false, error: 'brevo request failed' };
+  }
+}
+
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const provider = process.env.EMAIL_PROVIDER?.toLowerCase();
 
@@ -42,8 +85,9 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     return { ok: true, skipped: true };
   }
 
-  // Adapters land here once a provider is chosen (see file header).
+  if (provider === 'brevo') return sendViaBrevo(input);
+
   // eslint-disable-next-line no-console
-  console.warn(`[email] EMAIL_PROVIDER="${provider}" is set but no adapter is implemented yet; skipping send.`);
+  console.warn(`[email] EMAIL_PROVIDER="${provider}" is set but no adapter is implemented; skipping send.`);
   return { ok: false, skipped: true, error: `email provider "${provider}" not implemented` };
 }

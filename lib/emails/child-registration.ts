@@ -44,13 +44,14 @@ export async function sendChildRegistrationEmail(params: RegistrationEmailParams
         <h1 style="margin:0;font-size:22px;font-weight:600;">${childName} is registered</h1>
         <p style="margin:12px 0 0;font-size:15px;line-height:1.5;color:#393939;">
           Hi ${guardianName}, ${childName} has been registered for ${eventName}.
-          Use the QR code below to check ${childName} in and out — just show it on your phone at the desk.
+          We've attached ${childName}'s check-in QR code to this email — show it on your phone at the desk to check them in and out.
         </p>
       </td></tr>
-      <tr><td align="center" style="padding:20px 28px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" style="border:1px solid #e0e0e0;">
-          <tr><td style="padding:16px;">
-            <img src="cid:${cid}" width="240" height="240" alt="Check-in QR code for ${childName}" style="display:block;width:240px;height:240px;" />
+      <tr><td style="padding:8px 28px 20px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="border:1px solid #e0e0e0;background:#f4f4f4;padding:16px;">
+            <p style="margin:0;font-size:14px;font-weight:600;color:#161616;">📎 Check-in QR code attached (check-in-qr.png)</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#525252;">Open the attached image on your phone and show it at the desk to check ${childName} in and out.</p>
           </td></tr>
         </table>
         <div style="margin-top:16px;">${tagLine}</div>
