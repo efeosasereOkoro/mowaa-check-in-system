@@ -60,6 +60,14 @@ export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boo
       </div>
 
       <div style={{ marginTop: 14 }}>
+        <label style={label}>Guardian email</label>
+        <input name="guardianEmail" type="email" autoComplete="off" style={input} />
+        <div style={{ fontSize: 12, color: '#8D8D8D', marginTop: 6 }}>
+          Optional. If provided, we’ll email their QR code to show on a phone at check-in and check-out.
+        </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
         <label style={label}>Home address (admin-only)</label>
         <input name="homeAddress" style={input} />
       </div>

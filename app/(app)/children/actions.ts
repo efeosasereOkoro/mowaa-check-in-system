@@ -5,6 +5,9 @@ import { requireRole } from '@/lib/require-role';
 import { addChild, updateChild, deleteChild, getChild, type NewChildInput } from '@/lib/children';
 import { addPickupPerson, removePickupPerson, updatePickupPerson } from '@/lib/pickup-persons';
 import { assignGeneratedTag, unassignActiveTag } from '@/lib/tags';
+import { sendChildRegistrationEmail } from '@/lib/emails/child-registration';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type ChildActionState = { error?: string; ok?: boolean };
 
@@ -23,6 +26,10 @@ function parseChildForm(formData: FormData): { values: NewChildInput } | { error
   if (ageRaw && (!Number.isInteger(age) || (age as number) < 0 || (age as number) > 120)) {
     return { error: 'Age must be a whole number between 0 and 120.' };
   }
+  const guardianEmail = get('guardianEmail');
+  if (guardianEmail && !EMAIL_RE.test(guardianEmail)) {
+    return { error: 'Enter a valid guardian email, or leave it blank.' };
+  }
   return {
     values: {
       firstName,
@@ -30,6 +37,7 @@ function parseChildForm(formData: FormData): { values: NewChildInput } | { error
       age,
       guardianName,
       guardianPhone,
+      guardianEmail: guardianEmail || null,
       homeAddress: get('homeAddress') || null,
       healthDetails: get('healthDetails') || null,
     },
@@ -40,13 +48,35 @@ export async function createChildAction(
   _prev: ChildActionState,
   formData: FormData,
 ): Promise<ChildActionState> {
-  const staff = await requireRole(['admin']);
+  // Receptionists can register children directly, like admins (B-042).
+  const staff = await requireRole(['admin', 'receptionist']);
   const parsed = parseChildForm(formData);
   if ('error' in parsed) return parsed;
 
   const [created] = await addChild(staff.id, parsed.values);
   // Every child gets a tag number automatically — no manual entry, none missed.
-  if (created?.id) await assignGeneratedTag(staff.id, created.id, parsed.values.firstName, parsed.values.lastName);
+  let tagCode: string | null = null;
+  if (created?.id) {
+    tagCode = await assignGeneratedTag(staff.id, created.id, parsed.values.firstName, parsed.values.lastName);
+  }
+
+  // Best-effort: email the guardian a confirmation + the child's QR to show at check-in/out.
+  // Registration must never fail because email is down or unconfigured.
+  if (created?.id && parsed.values.guardianEmail) {
+    try {
+      await sendChildRegistrationEmail({
+        to: parsed.values.guardianEmail,
+        guardianName: parsed.values.guardianName,
+        childName: `${parsed.values.firstName} ${parsed.values.lastName}`,
+        tagCode,
+        qrToken: created.qrToken,
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('child registration email failed', e);
+    }
+  }
+
   revalidatePath('/children');
   return { ok: true };
 }

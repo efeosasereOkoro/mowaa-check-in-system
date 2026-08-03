@@ -90,6 +90,7 @@ export const children = pgTable('children', {
   age: integer('age'),
   guardianName: text('guardian_name').notNull(),
   guardianPhone: text('guardian_phone').notNull(),
+  guardianEmail: text('guardian_email'), // optional; where the registration + QR email is sent
   homeAddress: text('home_address'), // admin-only visibility (enforced by RLS in E3)
   healthDetails: text('health_details'), // allergies / conditions, free text
   photoUrl: text('photo_url'), // optional; feature-flagged pending safeguarding (B-004)

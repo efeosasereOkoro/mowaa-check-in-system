@@ -11,6 +11,7 @@ type ChildValues = {
   age: number | null;
   guardianName: string;
   guardianPhone: string;
+  guardianEmail: string | null;
   homeAddress: string | null;
   healthDetails: string | null;
 };
@@ -65,6 +66,11 @@ export default function EditChildForm({ child }: { child: ChildValues }) {
           <label style={label}>Guardian phone *</label>
           <input name="guardianPhone" defaultValue={child.guardianPhone} style={input} />
         </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <label style={label}>Guardian email</label>
+        <input name="guardianEmail" type="email" defaultValue={child.guardianEmail ?? ''} style={input} />
       </div>
 
       <div style={{ marginTop: 14 }}>
