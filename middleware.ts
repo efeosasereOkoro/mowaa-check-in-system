@@ -19,6 +19,7 @@ export default function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except the auth API, the sign-in page, and static assets.
-  matcher: ['/((?!api/auth|sign-in|_next/static|_next/image|favicon.ico).*)'],
+  // Run on everything except the auth API, the public QR image endpoint, the sign-in page,
+  // and static assets.
+  matcher: ['/((?!api/auth|api/qr|sign-in|_next/static|_next/image|favicon.ico).*)'],
 };

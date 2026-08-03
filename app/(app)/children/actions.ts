@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { requireRole } from '@/lib/require-role';
 import { addChild, updateChild, deleteChild, getChild, type NewChildInput } from '@/lib/children';
 import { addPickupPerson, removePickupPerson, updatePickupPerson } from '@/lib/pickup-persons';
@@ -64,12 +65,18 @@ export async function createChildAction(
   // Registration must never fail because email is down or unconfigured.
   if (created?.id && parsed.values.guardianEmail) {
     try {
+      // Public origin so the email can embed the QR inline (env override for reliability).
+      const h = await headers();
+      const host = h.get('x-forwarded-host') ?? h.get('host');
+      const proto = h.get('x-forwarded-proto') ?? 'https';
+      const appUrl = process.env.APP_URL || (host ? `${proto}://${host}` : undefined);
       await sendChildRegistrationEmail({
         to: parsed.values.guardianEmail,
         guardianName: parsed.values.guardianName,
         childName: `${parsed.values.firstName} ${parsed.values.lastName}`,
         tagCode,
         qrToken: created.qrToken,
+        appUrl,
       });
     } catch (e) {
       // eslint-disable-next-line no-console
