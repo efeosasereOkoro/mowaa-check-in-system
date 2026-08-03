@@ -48,7 +48,8 @@ export async function createChildAction(
   _prev: ChildActionState,
   formData: FormData,
 ): Promise<ChildActionState> {
-  const staff = await requireRole(['admin']);
+  // Receptionists can register children directly, like admins (B-042).
+  const staff = await requireRole(['admin', 'receptionist']);
   const parsed = parseChildForm(formData);
   if ('error' in parsed) return parsed;
 

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList, getDayRoster, type Counters } from '@/lib/dashboard';
@@ -6,6 +5,7 @@ import ChildLookup from './child-lookup';
 import Roster from './roster';
 import DayPicker, { type DayItem } from './day-picker';
 import DesktopOnly from './desktop-only';
+import RegisterChildButton from './register-child-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,19 +54,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   return (
     <div style={{ maxWidth: 1000 }}>
-      <DesktopOnly>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Attendance console</div>
-          {staff.role === 'admin' && (
-            <Link
-              href="/children"
-              style={{ display: 'inline-flex', alignItems: 'center', height: 36, padding: '0 16px', background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none' }}
-            >
-              + Register a child
-            </Link>
-          )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+        <DesktopOnly>
+          <div style={{ fontSize: 12, color: '#525252' }}>Attendance console</div>
+        </DesktopOnly>
+        {/* Both receptionists and admins register from here (receptionists can't reach /children). */}
+        <div style={{ marginLeft: 'auto' }}>
+          <RegisterChildButton />
         </div>
-      </DesktopOnly>
+      </div>
 
       {selectedId ? (
         <DayPicker items={dayItems} selectedId={selectedId} />
