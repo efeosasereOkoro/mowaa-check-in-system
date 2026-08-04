@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import LegalPage from '@/components/legal-page';
 
 // Update this whenever the content below changes.
-const LAST_UPDATED = '31 July 2026';
+const LAST_UPDATED = '4 August 2026';
 
 export const metadata: Metadata = {
   title: 'Privacy policy',
@@ -39,12 +39,14 @@ export default function PrivacyPage() {
       <p>About each child:</p>
       <ul>
         <li>their name and age</li>
-        <li>their guardian’s name and phone number</li>
+        <li>their guardian’s or guardians’ names, phone numbers, email addresses, and relationship to the child</li>
+        <li>any other people authorised to collect them, with their relationship and phone number</li>
         <li>their home address, if the organisation adds it</li>
         <li>health or medical details, such as allergies or conditions</li>
-        <li>a check-in and check-out record — the times, and who collected them</li>
+        <li>a check-in and check-out record — the times each day (a child may come and go more than once), and who collected them</li>
         <li>a tag number and QR code we generate to identify them</li>
       </ul>
+      <p>We use a guardian’s email address, if given, only to send that child’s (or family’s) check-in QR code.</p>
       <p>About staff who use the system:</p>
       <ul>
         <li>their name, email address and role — for example receptionist, health officer or admin</li>
@@ -68,8 +70,8 @@ export default function PrivacyPage() {
       <p>People see only what their role needs:</p>
       <ul>
         <li>
-          <strong>Reception</strong> — a child’s name, age, tag, status, guardian name and phone. Not the home address or any health
-          details.
+          <strong>Reception</strong> — a child’s name, age, tag, status, guardians and the authorised pickup list. Not the home address
+          or any health details.
         </li>
         <li>
           <strong>Health officer</strong> — health and medical details, but not the home address.
