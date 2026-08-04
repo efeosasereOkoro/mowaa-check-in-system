@@ -8,6 +8,9 @@ const label: React.CSSProperties = { fontSize: 12, color: '#525252', marginBotto
 export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boolean; onSuccess?: () => void }) {
   const [state, action, pending] = useActionState<ChildActionState, FormData>(createChildAction, {});
   const formRef = useRef<HTMLFormElement>(null);
+  // Pickup-person repeater: one blank row to start; rows are keyed so remove is stable.
+  const [pickupRows, setPickupRows] = useState<number[]>([0]);
+  const nextRowId = useRef(1);
 
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
@@ -20,6 +23,8 @@ export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boo
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
+      setPickupRows([0]);
+      nextRowId.current = 1;
       onSuccess?.();
     }
   }, [state, onSuccess]);
@@ -74,6 +79,51 @@ export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boo
       <div style={{ marginTop: 14 }}>
         <label style={label}>Health details — allergies / conditions (health &amp; admin only)</label>
         <input name="healthDetails" style={input} />
+      </div>
+
+      <div style={{ marginTop: 20, borderTop: '1px solid #E0E0E0', paddingTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>People allowed to pick up</div>
+        <div style={{ fontSize: 12, color: '#8D8D8D', margin: '4px 0 12px' }}>
+          Optional — anyone authorised to collect the child. Add as many as you need; a person may be listed by more than one name.
+        </div>
+
+        {pickupRows.map((id, i) => (
+          <div key={id} style={{ ...grid, marginBottom: 10 }}>
+            <div>
+              {i === 0 && <label style={label}>Name</label>}
+              <input name="pickupName" placeholder="Full name" style={input} />
+            </div>
+            <div>
+              {i === 0 && <label style={label}>Relationship</label>}
+              <input name="pickupRelationship" placeholder="e.g. Mother, Uncle" style={input} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                {i === 0 && <label style={label}>Phone</label>}
+                <input name="pickupPhone" inputMode="tel" placeholder="Optional" style={{ ...input, fontFamily: 'var(--font-mono, monospace)' }} />
+              </div>
+              {pickupRows.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setPickupRows((rows) => rows.filter((r) => r !== id))}
+                  aria-label="Remove this person"
+                  title="Remove"
+                  style={{ flex: 'none', width: h, height: h, background: '#fff', border: '1px solid #E0E0E0', color: '#DA1E28', fontSize: 16, cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => setPickupRows((rows) => [...rows, nextRowId.current++])}
+          style={{ height: 32, padding: '0 12px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 13, cursor: 'pointer' }}
+        >
+          + Add another person
+        </button>
       </div>
 
       {state.error && (

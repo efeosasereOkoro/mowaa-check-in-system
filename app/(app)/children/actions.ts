@@ -84,6 +84,26 @@ export async function createChildAction(
     }
   }
 
+  // People allowed to pick up (repeater) — insert every complete row (name + relationship).
+  // A guardian may be known by more than one name, and more than one person may collect the
+  // child, so this is a list. RLS lets admin + receptionist add pickups. Best-effort: the
+  // child is already registered, so a pickup hiccup must not fail the registration.
+  if (created?.id) {
+    const names = formData.getAll('pickupName').map((v) => String(v).trim());
+    const rels = formData.getAll('pickupRelationship').map((v) => String(v).trim());
+    const phones = formData.getAll('pickupPhone').map((v) => String(v).trim());
+    for (let i = 0; i < names.length; i++) {
+      if (names[i] && rels[i]) {
+        try {
+          await addPickupPerson(staff.id, created.id, { name: names[i], relationship: rels[i], phone: phones[i] || null });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('add pickup during registration failed', e);
+        }
+      }
+    }
+  }
+
   revalidatePath('/children');
   return { ok: true };
 }
