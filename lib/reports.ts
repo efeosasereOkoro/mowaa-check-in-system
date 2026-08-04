@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { withStaffContext } from '@/lib/db-authenticated';
 import { attendanceLog, children, eventDays, medicalNotes, pickupPersons, staff, tags } from '@/db/schema';
 
@@ -36,11 +36,33 @@ function dateOf(v: unknown): string {
 const actionLabel = (a: 'check_in' | 'check_out'): 'Check in' | 'Check out' =>
   a === 'check_in' ? 'Check in' : 'Check out';
 
+export type DayLite = { id: string; dayNumber: number; label: string | null };
+
 /**
- * Attendance report rows. `dayId = null` → all days (ordered day then time);
- * a specific `dayId` → just that day. FR-16.
+ * Resolve a from/to day selection into the ordered set of event-day ids to report on.
+ * Missing bounds default to the whole event; out-of-order bounds are swapped. Used by the
+ * reports page, the CSV export route, and the printable report so they agree (B-056).
  */
-export async function getAttendanceReport(staffId: string, dayId: string | null): Promise<AttendanceRow[]> {
+export function resolveDayRange(
+  days: DayLite[],
+  from?: string,
+  to?: string,
+): { ids: string[]; fromDay: DayLite | null; toDay: DayLite | null } {
+  if (days.length === 0) return { ids: [], fromDay: null, toDay: null };
+  const byId = new Map(days.map((d) => [d.id, d] as const));
+  let f = (from && byId.get(from)) || days[0];
+  let t = (to && byId.get(to)) || days[days.length - 1];
+  if (f.dayNumber > t.dayNumber) [f, t] = [t, f];
+  const ids = days.filter((d) => d.dayNumber >= f.dayNumber && d.dayNumber <= t.dayNumber).map((d) => d.id);
+  return { ids, fromDay: f, toDay: t };
+}
+
+/**
+ * Attendance report rows. `dayIds = null` → all days; a list → just those days (a single
+ * day or a date range); an empty list → no rows. Ordered day then time. FR-16 / B-056.
+ */
+export async function getAttendanceReport(staffId: string, dayIds: string[] | null): Promise<AttendanceRow[]> {
+  if (dayIds && dayIds.length === 0) return [];
   return withStaffContext(staffId, async (tx) => {
     const base = tx
       .select({
@@ -60,7 +82,7 @@ export async function getAttendanceReport(staffId: string, dayId: string | null)
       .innerJoin(eventDays, eq(eventDays.id, attendanceLog.eventDayId))
       .leftJoin(staff, eq(staff.id, attendanceLog.staffId));
 
-    const rows = await (dayId ? base.where(eq(attendanceLog.eventDayId, dayId)) : base).orderBy(
+    const rows = await (dayIds ? base.where(inArray(attendanceLog.eventDayId, dayIds)) : base).orderBy(
       asc(eventDays.dayNumber),
       asc(attendanceLog.occurredAt),
     );

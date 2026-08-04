@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { requireRole } from '@/lib/require-role';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList } from '@/lib/dashboard';
-import { getAttendanceReport, getEndOfDayFlags } from '@/lib/reports';
+import { getAttendanceReport, getEndOfDayFlags, resolveDayRange } from '@/lib/reports';
 import { MobileOnly, DesktopOnly } from '@/components/viewport';
-import ReportDaySelect, { type DayOption } from './report-day-select';
+import ReportRangeSelect, { type DayOption } from './report-range-select';
 import AttendanceTable from './attendance-table';
 import ExportSheet from './export-sheet';
 
@@ -22,50 +22,66 @@ function Dot({ color }: { color: string }) {
   return <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flex: 'none' }} />;
 }
 
-export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; day?: string }> }) {
   const staff = await requireRole(['admin']);
-  const { day: dayParam } = await searchParams;
+  const { from, to, day } = await searchParams;
 
   const days = await getEventDaysList(staff.id);
   const current = await getCurrentEventDay(staff.id);
 
-  const isValid = dayParam === 'all' || days.some((d) => d.id === dayParam);
-  const selected = isValid ? (dayParam as string) : current?.id ?? 'all';
-  const dayId = selected === 'all' ? null : selected;
-  const selectedDay = dayId ? days.find((d) => d.id === dayId) ?? null : null;
-  const dayName = selectedDay ? dayShort(selectedDay.dayNumber, selectedDay.label) : 'All days';
+  // Default view: the current event day (single); outside event hours, the whole event.
+  // Legacy `?day=<id|all>` links still resolve.
+  let fromParam = from;
+  let toParam = to;
+  if (!fromParam && !toParam) {
+    if (day && day !== 'all') fromParam = toParam = day;
+    else if (day !== 'all' && current) fromParam = toParam = current.id;
+  }
 
-  const options: DayOption[] = [
-    { value: 'all', label: 'All days' },
-    ...days.map((d) => ({ value: d.id, label: dayShort(d.dayNumber, d.label) })),
-  ];
+  const { ids, fromDay, toDay } = resolveDayRange(days, fromParam, toParam);
+  const singleDay = !!fromDay && !!toDay && fromDay.id === toDay.id;
+  const multiDay = ids.length > 1;
 
-  const rows = await getAttendanceReport(staff.id, dayId);
-  const flags = dayId ? await getEndOfDayFlags(staff.id, dayId) : null;
-  const allDays = dayId === null;
+  const rangeLabel = !fromDay || !toDay
+    ? 'No event days'
+    : singleDay
+      ? dayShort(fromDay.dayNumber, fromDay.label)
+      : ids.length === days.length
+        ? 'Whole event'
+        : `${dayShort(fromDay.dayNumber, fromDay.label)} – ${dayShort(toDay.dayNumber, toDay.label)}`;
+
+  const options: DayOption[] = days.map((d) => ({ value: d.id, label: dayShort(d.dayNumber, d.label) }));
+
+  const rows = await getAttendanceReport(staff.id, ids);
+  const flags = singleDay ? await getEndOfDayFlags(staff.id, fromDay!.id) : null;
+
+  const range = fromDay && toDay ? `from=${fromDay.id}&to=${toDay.id}` : '';
 
   return (
     <div style={{ maxWidth: 1000 }}>
       <MobileOnly>
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.2 }}>Reports</div>
-          <div style={{ fontSize: 13, color: '#525252', marginTop: 2 }}>{rows.length} events</div>
+          <div style={{ fontSize: 13, color: '#525252', marginTop: 2 }}>
+            {rangeLabel} · {rows.length} events
+          </div>
         </div>
       </MobileOnly>
       <DesktopOnly>
         <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 20px' }}>
-          Reports <span style={{ color: '#525252' }}>· {dayName}</span>
+          Reports <span style={{ color: '#525252' }}>· {rangeLabel}</span>
         </h1>
       </DesktopOnly>
 
       <div style={{ marginBottom: 14 }}>
-        <ReportDaySelect options={options} value={selected} />
+        {fromDay && toDay && <ReportRangeSelect options={options} from={fromDay.id} to={toDay.id} />}
       </div>
 
       <DesktopOnly>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
-          <a href={`/api/reports/attendance?day=${selected}`} style={exportBtn}>Export attendance (CSV)</a>
-          <a href="/api/reports/register" style={exportBtnSecondary}>Export register (CSV)</a>
+          <a href={`/api/reports/attendance?${range}`} style={exportBtn}>Attendance (CSV)</a>
+          <a href={`/reports/print?${range}`} target="_blank" style={exportBtnSecondary}>Attendance (PDF)</a>
+          <a href="/api/reports/register" style={exportBtnSecondary}>Register (CSV)</a>
         </div>
       </DesktopOnly>
 
@@ -108,14 +124,14 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
       <DesktopOnly>
         <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-          Attendance — {dayName}
+          Attendance — {rangeLabel}
           <span style={{ color: '#8D8D8D', fontWeight: 400 }}> ({rows.length})</span>
         </div>
       </DesktopOnly>
 
-      <AttendanceTable rows={rows} allDays={allDays} />
+      <AttendanceTable rows={rows} allDays={multiDay} />
 
-      <ExportSheet day={selected} />
+      <ExportSheet range={range} />
     </div>
   );
 }
