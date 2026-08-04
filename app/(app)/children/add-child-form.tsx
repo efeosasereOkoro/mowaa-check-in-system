@@ -8,6 +8,9 @@ const label: React.CSSProperties = { fontSize: 12, color: '#525252', marginBotto
 export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boolean; onSuccess?: () => void }) {
   const [state, action, pending] = useActionState<ChildActionState, FormData>(createChildAction, {});
   const formRef = useRef<HTMLFormElement>(null);
+  // Guardian repeater: first row is the primary (required); rows are keyed so remove is stable.
+  const [guardianRows, setGuardianRows] = useState<number[]>([0]);
+  const nextGuardianId = useRef(1);
   // Pickup-person repeater: one blank row to start; rows are keyed so remove is stable.
   const [pickupRows, setPickupRows] = useState<number[]>([0]);
   const nextRowId = useRef(1);
@@ -23,6 +26,8 @@ export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boo
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
+      setGuardianRows([0]);
+      nextGuardianId.current = 1;
       setPickupRows([0]);
       nextRowId.current = 1;
       onSuccess?.();
@@ -53,23 +58,57 @@ export default function AddChildForm({ sheet = false, onSuccess }: { sheet?: boo
         </div>
       </div>
 
-      <div style={{ ...grid, marginTop: 14 }}>
-        <div>
-          <label style={label}>Guardian name *</label>
-          <input name="guardianName" style={input} />
+      <div style={{ marginTop: 20, borderTop: '1px solid #E0E0E0', paddingTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>Guardians</div>
+        <div style={{ fontSize: 12, color: '#8D8D8D', margin: '4px 0 12px' }}>
+          The first is the primary guardian (required). Add more if the child has more than one. The
+          primary’s email, if given, receives the QR code to show on a phone at check-in and check-out.
         </div>
-        <div>
-          <label style={label}>Guardian phone *</label>
-          <input name="guardianPhone" style={{ ...input, fontFamily: 'var(--font-mono, monospace)' }} />
-        </div>
-      </div>
 
-      <div style={{ marginTop: 14 }}>
-        <label style={label}>Guardian email</label>
-        <input name="guardianEmail" type="email" autoComplete="off" style={input} />
-        <div style={{ fontSize: 12, color: '#8D8D8D', marginTop: 6 }}>
-          Optional. If provided, we’ll email their QR code to show on a phone at check-in and check-out.
-        </div>
+        {guardianRows.map((id, i) => (
+          <div key={id} style={{ marginBottom: i === guardianRows.length - 1 ? 0 : 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: i === 0 ? '#0F62FE' : '#525252' }}>
+                {i === 0 ? 'Primary guardian' : `Guardian ${i + 1}`}
+              </span>
+              {i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setGuardianRows((rows) => rows.filter((r) => r !== id))}
+                  style={{ height: 24, padding: '0 8px', background: '#fff', border: '1px solid #E0E0E0', color: '#DA1E28', fontSize: 12, cursor: 'pointer' }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <div style={grid}>
+              <div>
+                <label style={label}>Name{i === 0 ? ' *' : ''}</label>
+                <input name="guardianName" placeholder="Full name" style={input} />
+              </div>
+              <div>
+                <label style={label}>Relationship</label>
+                <input name="guardianRelationship" placeholder="e.g. Mother, Father" style={input} />
+              </div>
+              <div>
+                <label style={label}>Phone{i === 0 ? ' *' : ''}</label>
+                <input name="guardianPhone" inputMode="tel" style={{ ...input, fontFamily: 'var(--font-mono, monospace)' }} />
+              </div>
+              <div>
+                <label style={label}>Email</label>
+                <input name="guardianEmail" type="email" autoComplete="off" placeholder="Optional" style={input} />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => setGuardianRows((rows) => [...rows, nextGuardianId.current++])}
+          style={{ marginTop: 12, height: 32, padding: '0 12px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 13, cursor: 'pointer' }}
+        >
+          + Add another guardian
+        </button>
       </div>
 
       <div style={{ marginTop: 14 }}>

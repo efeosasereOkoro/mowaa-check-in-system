@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { requireRole } from '@/lib/require-role';
 import { addChild, updateChild, deleteChild, getChild, type NewChildInput } from '@/lib/children';
 import { addPickupPerson, removePickupPerson, updatePickupPerson } from '@/lib/pickup-persons';
+import { addGuardian } from '@/lib/guardians';
 import { assignGeneratedTag, unassignActiveTag } from '@/lib/tags';
 import { sendChildRegistrationEmail } from '@/lib/emails/child-registration';
 
@@ -81,6 +82,35 @@ export async function createChildAction(
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error('child registration email failed', e);
+    }
+  }
+
+  // Guardians (repeater) — the primary (row 0, validated above) is also stored on the child as
+  // the denormalized snapshot used by reports/email/CSV; here we record the full list, each with
+  // a relationship. Best-effort: the child is already registered, so a guardian hiccup must not
+  // fail registration. Rows are aligned by index across the parallel getAll() arrays.
+  if (created?.id) {
+    const gNames = formData.getAll('guardianName').map((v) => String(v).trim());
+    const gRels = formData.getAll('guardianRelationship').map((v) => String(v).trim());
+    const gPhones = formData.getAll('guardianPhone').map((v) => String(v).trim());
+    const gEmails = formData.getAll('guardianEmail').map((v) => String(v).trim());
+    let primaryAssigned = false;
+    for (let i = 0; i < gNames.length; i++) {
+      if (!gNames[i]) continue; // a guardian needs at least a name
+      const isPrimary = !primaryAssigned;
+      primaryAssigned = true;
+      try {
+        await addGuardian(staff.id, created.id, {
+          name: gNames[i],
+          relationship: gRels[i] || null,
+          phone: gPhones[i] || null,
+          email: gEmails[i] && EMAIL_RE.test(gEmails[i]) ? gEmails[i] : null,
+          isPrimary,
+        });
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('add guardian during registration failed', e);
+      }
     }
   }
 
