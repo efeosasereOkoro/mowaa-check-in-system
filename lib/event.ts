@@ -4,4 +4,4 @@
  * easy to update in one place; move to a DB/settings row if it ever needs to be
  * editable in-app (e.g. for the multi-tenant direction, B-023).
  */
-export const EVENT_NAME = 'NLC Kids Camp';
+export const EVENT_NAME = 'MOWAA Summer School';

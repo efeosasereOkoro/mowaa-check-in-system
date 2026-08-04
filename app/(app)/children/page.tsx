@@ -7,6 +7,7 @@ import { MobileOnly, DesktopOnly } from '@/components/viewport';
 import AddChildForm from './add-child-form';
 import AddChildSheet from './add-child-sheet';
 import ChildrenTable, { type ChildRow } from './children-table';
+import ImportChildren from './import-children';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,22 +47,28 @@ export default async function ChildrenPage() {
             <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.2 }}>Children</div>
             <div style={{ fontSize: 13, color: '#525252', marginTop: 2 }}>{kids.length} registered</div>
           </div>
-          <Link
-            href="/cards"
-            target="_blank"
-            style={{ flex: 'none', height: 36, padding: '0 12px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
-          >
-            <QrGlyph />
-            QR cards
-          </Link>
+          <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+            <Link
+              href="/cards"
+              target="_blank"
+              style={{ height: 36, padding: '0 12px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+            >
+              <QrGlyph />
+              QR cards
+            </Link>
+            <ImportChildren />
+          </div>
         </div>
       </MobileOnly>
       <DesktopOnly>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
           <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Children</h1>
           <Link href="/cards" target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
             Print QR ID cards →
           </Link>
+          <div style={{ marginLeft: 'auto' }}>
+            <ImportChildren />
+          </div>
         </div>
       </DesktopOnly>
 
