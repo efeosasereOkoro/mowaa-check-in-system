@@ -100,7 +100,7 @@ export default function UsersTable({ users, currentUserId }: { users: StaffListI
                 <StatusDot status={u.status} />
               </td>
               <td style={td}>
-                <UserRowActions userId={u.id} suspended={u.status === 'suspended'} isSelf={u.id === currentUserId} />
+                <UserRowActions userId={u.id} name={u.name} suspended={u.status === 'suspended'} isSelf={u.id === currentUserId} />
               </td>
             </tr>
           ))}
@@ -131,7 +131,7 @@ export default function UsersTable({ users, currentUserId }: { users: StaffListI
       detail: isSelf ? (
         <span style={{ fontSize: 12, color: '#8D8D8D' }}>You cannot change your own access</span>
       ) : (
-        <UserRowActions userId={u.id} suspended={suspended} isSelf={false} full />
+        <UserRowActions userId={u.id} name={u.name} suspended={suspended} isSelf={false} full />
       ),
     };
   });

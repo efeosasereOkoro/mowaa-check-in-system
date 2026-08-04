@@ -26,6 +26,7 @@ const TENANT_TABLES = [
   'children',
   'tags',
   'pickup_persons',
+  'guardians',
   'staff',
   'event_days',
   'attendance_log',

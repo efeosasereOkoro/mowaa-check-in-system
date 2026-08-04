@@ -5,6 +5,7 @@ import { getChild } from '@/lib/children';
 import { getChildAttendance } from '@/lib/attendance';
 import { getChildMedical } from '@/lib/medical';
 import { listPickupPersons } from '@/lib/pickup-persons';
+import { listGuardians } from '@/lib/guardians';
 import { listTagsForChild } from '@/lib/tags';
 import { AttendanceTable, MedicalNotesList } from '@/components/child-record';
 import EditChildForm from './edit-child-form';
@@ -23,6 +24,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
   const child = await getChild(staff.id, id);
   if (!child) notFound();
   const pickups = await listPickupPersons(staff.id, id);
+  const guardians = await listGuardians(staff.id, id);
   const childTags = await listTagsForChild(staff.id, id);
   const attendance = await getChildAttendance(staff.id, id);
   const medical = await getChildMedical(staff.id, id);
@@ -62,6 +64,38 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
           healthDetails: child.healthDetails,
         }}
       />
+
+      {guardians.length > 0 && (
+        <section style={sectionStyle}>
+          <h2 style={sectionH2}>Guardians</h2>
+          <div style={{ border: '1px solid #E0E0E0' }}>
+            {guardians.map((g, i) => (
+              <div
+                key={g.id}
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'baseline',
+                  gap: '4px 12px',
+                  padding: '10px 14px',
+                  borderTop: i === 0 ? 'none' : '1px solid #E0E0E0',
+                }}
+              >
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{g.name}</span>
+                {g.isPrimary && (
+                  <span style={{ fontSize: 11, color: '#0F62FE', border: '1px solid #0F62FE', padding: '1px 6px' }}>Primary</span>
+                )}
+                {g.relationship && <span style={{ fontSize: 13, color: '#525252' }}>{g.relationship}</span>}
+                {g.phone && <span style={{ fontSize: 13, color: '#525252', fontFamily: 'var(--font-mono, monospace)' }}>{g.phone}</span>}
+                {g.email && <span style={{ fontSize: 13, color: '#525252' }}>{g.email}</span>}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: '#8D8D8D', marginTop: 8 }}>
+            The primary guardian’s contact is edited in the form above. Additional guardians are captured at registration.
+          </div>
+        </section>
+      )}
 
       <TagSection
         childId={child.id}

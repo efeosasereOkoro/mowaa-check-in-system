@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
-import { createStaffUser, setUserSuspended, type SuspendResult } from '@/lib/staff-admin';
+import { createStaffUser, setUserSuspended, deleteStaffUser, type SuspendResult, type DeleteResult } from '@/lib/staff-admin';
 import type { StaffRole } from '@/lib/staff';
 
 export type UserActionState = { error?: string; ok?: boolean; createdName?: string };
@@ -35,6 +35,14 @@ export async function inviteUserAction(_prev: UserActionState, formData: FormDat
 export async function setUserSuspendedAction(userId: string, suspend: boolean): Promise<SuspendResult> {
   const admin = await requireRole(['admin']);
   const result = await setUserSuspended(admin.id, userId, suspend);
+  if (result.ok) revalidatePath('/users');
+  return result;
+}
+
+/** Permanently delete a user (admin) — from the Users list, after an in-app confirm. */
+export async function deleteUserAction(userId: string): Promise<DeleteResult> {
+  const admin = await requireRole(['admin']);
+  const result = await deleteStaffUser(admin.id, userId);
   if (result.ok) revalidatePath('/users');
   return result;
 }

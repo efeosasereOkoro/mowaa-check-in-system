@@ -136,6 +136,21 @@ export const pickupPersons = pgTable('pickup_persons', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---------- guardians (multiple per child; children.guardian_* is the denormalized primary) ----------
+export const guardians = pgTable('guardians', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
+  childId: uuid('child_id')
+    .notNull()
+    .references(() => children.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  relationship: text('relationship'),
+  phone: text('phone'),
+  email: text('email'),
+  isPrimary: boolean('is_primary').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---------- attendance_log (append-only; triggers added in E1-S4) ----------
 export const attendanceLog = pgTable('attendance_log', {
   id: uuid('id').primaryKey().defaultRandom(),
