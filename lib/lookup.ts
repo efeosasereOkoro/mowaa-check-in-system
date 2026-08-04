@@ -23,10 +23,14 @@ export type ChildCard = {
   collectorLabel?: string | null;
 };
 
+// Result of an auto-action taken on a scan (e.g. scan-to-check-in, B-053).
+export type LookupFlash = { kind: 'success' | 'info' | 'error'; text: string };
+
 export type LookupResult = {
   matches: ChildCard[];
   note: string | null;
   eventDay: { id: string; label: string | null } | null;
+  flash?: LookupFlash | null;
 };
 
 const childCols = {

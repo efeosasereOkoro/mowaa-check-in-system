@@ -1,15 +1,16 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { lookupAction } from './actions';
 import type { LookupResult } from '@/lib/lookup';
 import ScanQrButton from './scan-qr-button';
 import ChildCard from './child-card';
 
-function fd(q: string) {
+function fd(q: string, scan = false) {
   const f = new FormData();
   f.set('q', q);
+  if (scan) f.set('scan', '1');
   return f;
 }
 
@@ -32,8 +33,12 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
     note: null,
     eventDay: null,
   });
-  // Controlled query so a post-action refresh always re-runs the same search.
+  // Controlled query for the visible search box.
   const [query, setQuery] = useState('');
+  // The query behind the currently shown results — a typed search or a scanned token.
+  // A card's refresh (after check-in/out) re-runs this WITHOUT the scan flag, so a refresh
+  // never re-triggers scan-to-check-in.
+  const activeQ = useRef('');
 
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
@@ -43,16 +48,31 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  function onScan(token: string) {
-    setQuery(token);
-    action(fd(token));
+  // Manual search (form submit): remember the query so refreshes reuse it.
+  function submit(f: FormData) {
+    activeQ.current = String(f.get('q') ?? '').trim();
+    action(f);
   }
-  const refresh = () => action(fd(query));
+  // Camera scan: check the child in on the server (scan flag). Keep the opaque token out of
+  // the visible box, but remember it so a later refresh re-reads this child's status.
+  function onScan(token: string) {
+    setQuery('');
+    activeQ.current = token;
+    action(fd(token, true));
+  }
+  const refresh = () => action(fd(activeQ.current));
+
+  const flash = state.flash;
+  const flashStyle: Record<'success' | 'info' | 'error', React.CSSProperties> = {
+    success: { background: '#DEFBE6', border: '1px solid #A7F0BA', borderLeft: '3px solid #24A148', color: '#0E6027' },
+    info: { background: '#EDF5FF', border: '1px solid #D0E2FF', borderLeft: '3px solid #0F62FE', color: '#161616' },
+    error: { background: '#FFF1F1', border: '1px solid #FFB3B8', borderLeft: '3px solid #DA1E28', color: '#A2191F' },
+  };
 
   return (
     <div style={{ marginTop: narrow ? 0 : 8 }}>
       {narrow ? (
-        <form action={action} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <form action={submit} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
           <div style={{ flex: 1, minWidth: 0, height: 44, background: '#fff', border: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
             <Magnifier />
             <input
@@ -76,7 +96,7 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
           )}
         </form>
       ) : (
-        <form action={action} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <form action={submit} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <input
             name="q"
             value={query}
@@ -91,6 +111,13 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
           </button>
           <ScanQrButton onScan={onScan} />
         </form>
+      )}
+
+      {flash && (
+        <div style={{ marginTop: 14, padding: '12px 16px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, ...flashStyle[flash.kind] }}>
+          {flash.kind === 'success' && <span aria-hidden style={{ fontWeight: 700 }}>✓</span>}
+          {flash.text}
+        </div>
       )}
 
       {state.eventDay === null && (state.matches.length > 0 || state.note) && (
