@@ -131,7 +131,7 @@ export default function ChildLookup({ isAdmin }: { isAdmin: boolean }) {
       )}
 
       {state.matches.map((c) => (
-        <ChildCard key={c.id} card={c} isAdmin={isAdmin} eventOpen={state.eventDay !== null} onRefresh={refresh} />
+        <ChildCard key={c.id} card={c} eventOpen={state.eventDay !== null} onRefresh={refresh} />
       ))}
 
       {narrow && (

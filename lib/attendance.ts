@@ -153,30 +153,24 @@ async function currentDayInTx(tx: Parameters<Parameters<typeof withStaffContext>
   return rows[0] ?? null;
 }
 
-/** Check a child in. Enforces one check-in/out per day unless `override` (admin). */
-export async function checkIn(
-  staffId: string,
-  childId: string,
-  opts: { override?: boolean; reason?: string } = {},
-): Promise<ActionResult> {
+/**
+ * Check a child in. A child may check in and out multiple times a day — e.g. leaves for lunch
+ * and returns — so a checked-OUT child is checked back in normally, no override needed (B-045,
+ * D-035). The only guard is no double check-in while already on-site; check-out separately
+ * requires the child to be checked in. The append-only log keeps every in/out row, and a
+ * child's status is the last action, so rosters and reports fold multiple cycles correctly.
+ */
+export async function checkIn(staffId: string, childId: string): Promise<ActionResult> {
   return withStaffContext(staffId, async (tx) => {
     const day = await currentDayInTx(tx);
     if (!day) return { error: 'Check-in is only available during event hours.' };
     const status = await statusInTx(tx, day.id, childId);
-    if (!opts.override) {
-      if (status === 'checked_in') return { error: 'Already checked in today.' };
-      if (status === 'checked_out')
-        return { error: 'Already checked out today — an admin override is required to check in again.' };
-    } else if (!opts.reason?.trim()) {
-      return { error: 'A reason is required for an override.' };
-    }
+    if (status === 'checked_in') return { error: 'Already checked in.' };
     await tx.insert(attendanceLog).values({
       childId,
       eventDayId: day.id,
       action: 'check_in',
       staffId,
-      isOverride: !!opts.override,
-      overrideReason: opts.override ? opts.reason?.trim() ?? null : null,
     });
     return { ok: true };
   });
