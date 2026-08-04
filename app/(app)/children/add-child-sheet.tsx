@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AddChildForm from './add-child-form';
+import RegisterForm from './register-form';
 
 const Plus = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ flex: 'none' }}>
@@ -10,7 +10,7 @@ const Plus = () => (
   </svg>
 );
 
-// Narrow-only: sticky "Add child" bar + a full-height sheet wrapping AddChildForm.
+// Narrow-only: sticky "Register" bar + a full-height sheet wrapping the register form.
 export default function AddChildSheet() {
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
@@ -34,20 +34,20 @@ export default function AddChildSheet() {
           style={{ width: '100%', height: 44, background: '#0F62FE', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
           <Plus />
-          Add child
+          Register
         </button>
       </div>
 
       {open && (
-        <div role="dialog" aria-label="Add child" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+        <div role="dialog" aria-label="Register" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#fff', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 'none', height: 56, borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
-            <span style={{ fontSize: 16, fontWeight: 600 }}>Add child</span>
+            <span style={{ fontSize: 16, fontWeight: 600 }}>Register</span>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ width: 44, height: 44, background: 'transparent', border: 'none', fontSize: 22, color: '#525252', cursor: 'pointer' }}>
               ✕
             </button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-            <AddChildForm sheet onSuccess={() => setOpen(false)} />
+            <RegisterForm sheet onSuccess={() => setOpen(false)} />
           </div>
         </div>
       )}
