@@ -10,8 +10,8 @@ const Download = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-// Narrow-only: sticky "Export CSV" bar + a sheet with the two download options.
-export default function ExportSheet({ day }: { day: string }) {
+// Narrow-only: sticky "Export" bar + a sheet with the download / PDF options (honours the range).
+export default function ExportSheet({ range }: { range: string }) {
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const check = () => setNarrow(window.innerWidth < 672);
@@ -35,24 +35,31 @@ export default function ExportSheet({ day }: { day: string }) {
           style={{ width: '100%', height: 44, background: '#0F62FE', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
           <Download />
-          Export CSV
+          Export
         </button>
       </div>
 
       {open && (
-        <div role="dialog" aria-label="Export CSV" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+        <div role="dialog" aria-label="Export" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#fff', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 'none', height: 56, borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
-            <span style={{ fontSize: 16, fontWeight: 600 }}>Export CSV</span>
+            <span style={{ fontSize: 16, fontWeight: 600 }}>Export</span>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ width: 44, height: 44, background: 'transparent', border: 'none', fontSize: 22, color: '#525252', cursor: 'pointer' }}>
               ✕
             </button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-            <a href={`/api/reports/attendance?day=${day}`} style={rowStyle}>
+            <a href={`/api/reports/attendance?${range}`} style={rowStyle}>
               <Download size={18} />
               <span>
-                <span style={{ display: 'block', fontSize: 15, fontWeight: 600 }}>Attendance</span>
-                <span style={{ display: 'block', fontSize: 12, color: '#525252' }}>Follows the selected day · Opens in Excel</span>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 600 }}>Attendance — CSV</span>
+                <span style={{ display: 'block', fontSize: 12, color: '#525252' }}>The selected days · Opens in Excel</span>
+              </span>
+            </a>
+            <a href={`/reports/print?${range}`} target="_blank" style={rowStyle}>
+              <Download size={18} />
+              <span>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 600 }}>Attendance — PDF</span>
+                <span style={{ display: 'block', fontSize: 12, color: '#525252' }}>The selected days · Print or save as PDF</span>
               </span>
             </a>
             <a href="/api/reports/register" style={rowStyle}>
