@@ -4,7 +4,7 @@ import { listChildren } from '@/lib/children';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEmergencyChildIdsToday } from '@/lib/medical';
 import { MobileOnly, DesktopOnly } from '@/components/viewport';
-import AddChildForm from './add-child-form';
+import RegisterForm from './register-form';
 import AddChildSheet from './add-child-sheet';
 import ChildrenTable, { type ChildRow } from './children-table';
 import ImportChildren from './import-children';
@@ -73,7 +73,7 @@ export default async function ChildrenPage() {
       </DesktopOnly>
 
       <DesktopOnly>
-        <AddChildForm />
+        <RegisterForm />
       </DesktopOnly>
 
       <ChildrenTable children={childRows} />

@@ -7,7 +7,9 @@ import { addChild, updateChild, deleteChild, getChild, type NewChildInput } from
 import { addPickupPerson, removePickupPerson, updatePickupPerson } from '@/lib/pickup-persons';
 import { addGuardian } from '@/lib/guardians';
 import { assignGeneratedTag, unassignActiveTag } from '@/lib/tags';
+import { createFamily, type FamilyGuardianInput, type FamilyPickupInput, type FamilyChildInput } from '@/lib/family';
 import { sendChildRegistrationEmail } from '@/lib/emails/child-registration';
+import { sendFamilyRegistrationEmail } from '@/lib/emails/family-registration';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -136,6 +138,115 @@ export async function createChildAction(
 
   revalidatePath('/children');
   return { ok: true };
+}
+
+export type FamilyActionState = { error?: string; ok?: boolean; count?: number };
+
+// Parse the repeated fields shared across the whole family plus the per-child rows.
+function parseFamilyForm(
+  formData: FormData,
+): { guardians: FamilyGuardianInput[]; pickups: FamilyPickupInput[]; homeAddress: string | null; children: FamilyChildInput[] } | { error: string } {
+  const all = (k: string) => formData.getAll(k).map((v) => String(v).trim());
+
+  // Guardians (shared) — first named guardian is the primary.
+  const gNames = all('guardianName');
+  const gRels = all('guardianRelationship');
+  const gPhones = all('guardianPhone');
+  const gEmails = all('guardianEmail');
+  const guardians: FamilyGuardianInput[] = [];
+  for (let i = 0; i < gNames.length; i++) {
+    if (!gNames[i]) continue;
+    guardians.push({
+      name: gNames[i],
+      relationship: gRels[i] || null,
+      phone: gPhones[i] || null,
+      email: gEmails[i] && EMAIL_RE.test(gEmails[i]) ? gEmails[i] : null,
+    });
+  }
+  const primary = guardians[0];
+  if (!primary || !primary.name || !primary.phone) {
+    return { error: 'A primary guardian with a name and phone is required.' };
+  }
+  // The primary's email is used for the family email, so validate it when present.
+  const primaryEmailRaw = gEmails[gNames.findIndex((n) => n)] || '';
+  if (primaryEmailRaw && !EMAIL_RE.test(primaryEmailRaw)) {
+    return { error: 'Enter a valid email for the primary guardian, or leave it blank.' };
+  }
+
+  // Pickup people (shared) — only complete rows (name + relationship).
+  const pNames = all('pickupName');
+  const pRels = all('pickupRelationship');
+  const pPhones = all('pickupPhone');
+  const pickups: FamilyPickupInput[] = [];
+  for (let i = 0; i < pNames.length; i++) {
+    if (pNames[i] && pRels[i]) pickups.push({ name: pNames[i], relationship: pRels[i], phone: pPhones[i] || null });
+  }
+
+  // Children (per-child) — a row counts if it has any name; both names then required.
+  const cFirst = all('childFirstName');
+  const cLast = all('childLastName');
+  const cAge = all('childAge');
+  const cHealth = all('childHealth');
+  const children: FamilyChildInput[] = [];
+  const rows = Math.max(cFirst.length, cLast.length, cAge.length, cHealth.length);
+  for (let i = 0; i < rows; i++) {
+    const firstName = cFirst[i] || '';
+    const lastName = cLast[i] || '';
+    if (!firstName && !lastName && !(cAge[i] || '') && !(cHealth[i] || '')) continue; // blank row
+    if (!firstName || !lastName) return { error: `Each child needs a first and last name (check child ${i + 1}).` };
+    let age: number | null = null;
+    if (cAge[i]) {
+      const n = Number(cAge[i]);
+      if (!Number.isInteger(n) || n < 0 || n > 120) return { error: `Age for ${firstName} must be a whole number between 0 and 120.` };
+      age = n;
+    }
+    children.push({ firstName, lastName, age, healthDetails: cHealth[i] || null });
+  }
+  if (children.length === 0) return { error: 'Add at least one child to the family.' };
+
+  return { guardians, pickups, homeAddress: (formData.get('homeAddress') as string)?.trim() || null, children };
+}
+
+export async function createFamilyAction(
+  _prev: FamilyActionState,
+  formData: FormData,
+): Promise<FamilyActionState> {
+  // Receptionists register families directly too, like single children (B-042 RLS).
+  const staff = await requireRole(['admin', 'receptionist']);
+  const parsed = parseFamilyForm(formData);
+  if ('error' in parsed) return parsed;
+
+  let created;
+  try {
+    created = await createFamily(staff.id, parsed);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('family registration failed', e);
+    return { error: 'Could not register the family. Please check the details and try again.' };
+  }
+
+  // Best-effort: one combined email to the primary guardian listing every child + their QR.
+  const primary = parsed.guardians[0];
+  if (primary.email && created.children.length) {
+    try {
+      const h = await headers();
+      const host = h.get('x-forwarded-host') ?? h.get('host');
+      const proto = h.get('x-forwarded-proto') ?? 'https';
+      const appUrl = process.env.APP_URL || (host ? `${proto}://${host}` : undefined);
+      await sendFamilyRegistrationEmail({
+        to: primary.email,
+        guardianName: primary.name,
+        children: created.children.map((c) => ({ name: c.name, tagCode: c.tagCode, qrToken: c.qrToken })),
+        appUrl,
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('family registration email failed', e);
+    }
+  }
+
+  revalidatePath('/children');
+  return { ok: true, count: created.children.length };
 }
 
 export type PickupActionState = { error?: string; ok?: boolean };

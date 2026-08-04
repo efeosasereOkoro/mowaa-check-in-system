@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AddChildForm from '../children/add-child-form';
+import RegisterForm from '../children/register-form';
 
-// "Register a child" for the dashboard (receptionist + admin). Opens the shared AddChildForm
-// in a modal — full-screen on mobile, a centred card on desktop — so receptionists can
-// register without the admin-only Children page.
+// "Register" for the dashboard (receptionist + admin). Opens the shared register form (child
+// or family) in a modal — full-screen on mobile, a centred card on desktop — so receptionists
+// can register without the admin-only Children page.
 export default function RegisterChildButton() {
   const [open, setOpen] = useState(false);
   const [narrow, setNarrow] = useState(false);
@@ -23,14 +23,14 @@ export default function RegisterChildButton() {
         onClick={() => setOpen(true)}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 16px', background: '#0F62FE', color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
       >
-        + Register a child
+        + Register
       </button>
 
       {open && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Register a child"
+          aria-label="Register"
           onClick={() => setOpen(false)}
           style={{
             position: 'fixed',
@@ -56,7 +56,7 @@ export default function RegisterChildButton() {
             }}
           >
             <div style={{ flex: 'none', height: 56, borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
-              <span style={{ fontSize: 16, fontWeight: 600 }}>Register a child</span>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Register</span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -67,7 +67,7 @@ export default function RegisterChildButton() {
               </button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-              <AddChildForm sheet onSuccess={() => setOpen(false)} />
+              <RegisterForm sheet onSuccess={() => setOpen(false)} />
             </div>
           </div>
         </div>
