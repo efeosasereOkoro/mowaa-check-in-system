@@ -75,6 +75,40 @@ export async function setUserSuspended(adminId: string, userId: string, suspend:
   });
 }
 
+export type DeleteResult = { ok?: true; error?: string };
+
+/**
+ * Hard-delete a staff member (admin, B-049). Removes the `staff` row, RLS-scoped to the
+ * admin's own tenant (staff_all). The audit trail survives: attendance_log.staff_id and
+ * medical_notes.author_staff_id are ON DELETE SET NULL and permitted by the append-only
+ * triggers (migration 0011), so those records remain — only the staff link is nulled.
+ * The Neon Auth login lingers (no API to remove it), but without a staff row the person has
+ * no app access. Guards mirror suspend: can't delete yourself or the last active admin.
+ */
+export async function deleteStaffUser(adminId: string, userId: string): Promise<DeleteResult> {
+  if (userId === adminId) return { error: 'You cannot delete your own account.' };
+
+  return withStaffContext(adminId, async (tx) => {
+    const [target] = await tx
+      .select({ id: staff.id, role: staff.role })
+      .from(staff)
+      .where(eq(staff.id, userId))
+      .limit(1);
+    if (!target) return { error: 'User not found.' };
+
+    if (target.role === 'admin') {
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(staff)
+        .where(and(eq(staff.role, 'admin'), isNull(staff.deactivatedAt), ne(staff.id, userId)));
+      if (n === 0) return { error: 'This is the last active admin — provision or reactivate another admin first.' };
+    }
+
+    await tx.delete(staff).where(eq(staff.id, userId));
+    return { ok: true };
+  });
+}
+
 export type CreateStaffResult = { ok?: true; error?: string };
 
 /** This app's own origin, so a server action can reach its /api/auth endpoints. */
