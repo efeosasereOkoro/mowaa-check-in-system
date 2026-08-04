@@ -1,5 +1,5 @@
 import { withStaffContext } from '@/lib/db-authenticated';
-import { children, tags } from '@/db/schema';
+import { children, tags, guardians } from '@/db/schema';
 import type { NewChildInput } from '@/lib/children';
 import { sendChildRegistrationEmail } from '@/lib/emails/child-registration';
 
@@ -183,6 +183,17 @@ export async function importChildren(
       const code = generateCode(row.firstName, row.lastName, used);
       used.add(code);
       await tx.insert(tags).values({ childId: child.id, code, active: true });
+      // Also record the guardian in the guardians table (as primary), so imported children
+      // match form-registered ones — their guardian shows on the child page. CSV has one
+      // guardian per row, no relationship column, so relationship is null.
+      await tx.insert(guardians).values({
+        childId: child.id,
+        name: row.guardianName,
+        relationship: null,
+        phone: row.guardianPhone,
+        email: row.guardianEmail,
+        isPrimary: true,
+      });
       count++;
       if (opts.sendEmails && row.guardianEmail) {
         toEmail.push({

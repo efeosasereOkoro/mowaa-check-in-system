@@ -188,7 +188,7 @@ const features: { title: string; body: string; icon: React.ReactNode; tone: Tone
   },
   {
     title: 'Authorised pickup only',
-    body: 'Every check-out records who collected the child, verified against the guardian and pickup list — with an admin override that logs a reason.',
+    body: 'Every check-out records who collected the child, verified against the guardian and pickup list — and flags anyone not on it so staff can escalate before releasing.',
     icon: (<><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" /></>),
     tone: 'mint',
   },
