@@ -5,7 +5,6 @@ import type { ChildCard as CardData } from '@/lib/lookup';
 import {
   checkInAction,
   checkOutAction,
-  overrideCheckInAction,
   getCheckoutInfoAction,
   addVerifiedPickupAction,
 } from './actions';
@@ -33,20 +32,17 @@ function StatusBadge({ card }: { card: CardData }) {
 
 export default function ChildCard({
   card,
-  isAdmin,
   eventOpen,
   onRefresh,
 }: {
   card: CardData;
-  isAdmin: boolean;
   eventOpen: boolean;
   onRefresh: () => void;
 }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [mode, setMode] = useState<'idle' | 'checkout' | 'override' | 'escalate'>('idle');
+  const [mode, setMode] = useState<'idle' | 'checkout' | 'escalate'>('idle');
   const [pickups, setPickups] = useState<Pickup[]>([]);
-  const [reason, setReason] = useState('');
   const [escName, setEscName] = useState('');
   const [escRel, setEscRel] = useState('');
 
@@ -186,28 +182,14 @@ export default function ChildCard({
 
         {eventOpen && status === 'checked_out' && (
           <div>
-            <div style={{ fontSize: 13, color: '#525252' }}>
+            <div style={{ fontSize: 13, color: '#525252', marginBottom: 10 }}>
               Checked out at {card.outAt}
               {card.collectorLabel ? ` — collected by ${card.collectorLabel}.` : '.'}
             </div>
-            {isAdmin && mode !== 'override' && (
-              <button onClick={() => setMode('override')} style={{ marginTop: 10, height: 36, padding: '0 14px', background: 'transparent', border: '1px solid #0F62FE', color: '#0F62FE', fontSize: 13, cursor: 'pointer' }}>
-                Admin override — check in again
-              </button>
-            )}
-            {isAdmin && mode === 'override' && (
-              <div style={{ marginTop: 12, border: '1px solid #E0E0E0', padding: 14 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Admin override</div>
-                <div style={{ fontSize: 12, color: '#525252', margin: '4px 0 10px' }}>Reason is saved to the attendance log.</div>
-                <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for the second check-in (required)" style={{ width: '100%', height: 60, border: 'none', borderBottom: '1px solid #8D8D8D', padding: 10, fontSize: 13, resize: 'vertical' }} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                  <button disabled={pending || !reason.trim()} onClick={() => run(() => overrideCheckInAction(card.id, reason), () => { setMode('idle'); setReason(''); })} style={{ height: 36, padding: '0 16px', background: reason.trim() ? '#0F62FE' : '#C6C6C6', color: '#fff', border: 'none', fontSize: 13, cursor: reason.trim() ? 'pointer' : 'not-allowed' }}>
-                    Override &amp; check in
-                  </button>
-                  <button onClick={() => setMode('idle')} style={{ height: 36, padding: '0 14px', background: 'transparent', border: '1px solid #8D8D8D', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-                </div>
-              </div>
-            )}
+            {/* A child can return the same day — check them back in with no override (B-045). */}
+            <button onClick={() => run(() => checkInAction(card.id))} disabled={pending} style={primaryBtn(pending)}>
+              {pending ? 'Working…' : 'Check in again'}
+            </button>
           </div>
         )}
       </div>

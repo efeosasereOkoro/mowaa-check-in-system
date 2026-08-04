@@ -24,23 +24,22 @@ export async function lookupAction(_prev: LookupResult, formData: FormData): Pro
 
   if (day && result.matches.length) {
     // Scan-to-check-in (B-053): a camera scan resolves to exactly one child by their QR tag.
-    // When the event is open and the child hasn't arrived, the scan itself checks them in —
-    // no extra tap. Already-in / already-out just report status; check-out stays a deliberate,
-    // collector-verified action and re-check-in stays an admin override.
+    // A scan always means "arriving": a not-yet-arrived child is checked in, and a child who
+    // checked out earlier is checked back in (multiple in/out per day, B-045). A child already
+    // on-site just reports status — check-out stays a deliberate, collector-verified action.
     if (isScan && result.matches.length === 1 && result.matches[0].matchedBy === 'tag') {
       const only = result.matches[0];
       const who = `${only.firstName} ${only.lastName}`;
       const pre = await getDayStatuses(staff.id, day.id, [only.id]);
       const st = pre[only.id]?.status ?? 'not_arrived';
-      if (st === 'not_arrived') {
-        const r = await checkIn(staff.id, only.id);
-        result.flash = r.ok
-          ? { kind: 'success', text: `Checked in ${who}.` }
-          : { kind: 'error', text: r.error ?? 'Could not check in.' };
-      } else if (st === 'checked_in') {
+      if (st === 'checked_in') {
         result.flash = { kind: 'info', text: `${who} is already checked in — check them out below when leaving.` };
       } else {
-        result.flash = { kind: 'info', text: `${who} was already checked out today.` };
+        const back = st === 'checked_out';
+        const r = await checkIn(staff.id, only.id);
+        result.flash = r.ok
+          ? { kind: 'success', text: `Checked ${back ? 'back ' : ''}in ${who}.` }
+          : { kind: 'error', text: r.error ?? 'Could not check in.' };
       }
     }
 
@@ -61,12 +60,6 @@ export async function lookupAction(_prev: LookupResult, formData: FormData): Pro
 export async function checkInAction(childId: string): Promise<ActionResult> {
   const staff = await requireRole(['receptionist', 'admin']);
   return checkIn(staff.id, childId);
-}
-
-// Override is admin-only (FR-11).
-export async function overrideCheckInAction(childId: string, reason: string): Promise<ActionResult> {
-  const staff = await requireRole(['admin']);
-  return checkIn(staff.id, childId, { override: true, reason });
 }
 
 export async function getCheckoutInfoAction(childId: string) {
