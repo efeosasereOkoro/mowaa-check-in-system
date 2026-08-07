@@ -31,8 +31,10 @@ const TENANT_TABLES = [
   'event_days',
   'attendance_log',
   'medical_notes',
+  'incident_reports',
+  'incident_updates',
 ];
-const APPEND_ONLY = ['attendance_log', 'medical_notes'];
+const APPEND_ONLY = ['attendance_log', 'medical_notes', 'incident_reports', 'incident_updates'];
 
 let passed = 0;
 let failed = 0;
@@ -121,7 +123,19 @@ async function seedTenant(slug, name) {
     `insert into medical_notes (tenant_id, child_id, event_day_id, severity, note_text, author_staff_id) values ($1, $2, $3, 'routine', 'iso note', $4)`,
     [t, childId, dayId, staffId],
   );
-  return { t, staffId, childId, pickupId, tagId, dayId };
+  const incidentId = (
+    await owner.query(
+      `insert into incident_reports (tenant_id, child_id, category, reporter_staff_id, narrative)
+       values ($1, $2, 'safeguarding', $3, 'iso incident') returning id`,
+      [t, childId, staffId],
+    )
+  ).rows[0].id;
+  await owner.query(
+    `insert into incident_updates (tenant_id, incident_id, author_staff_id, kind, new_status, note)
+     values ($1, $2, $3, 'status_change', 'escalated', 'iso update')`,
+    [t, incidentId, staffId],
+  );
+  return { t, staffId, childId, pickupId, tagId, dayId, incidentId };
 }
 
 async function cleanup() {
@@ -135,7 +149,7 @@ async function cleanup() {
     await owner.query(`alter table ${tbl} disable trigger ${tbl}_append_only`);
   }
   try {
-    for (const tbl of ['attendance_log', 'medical_notes', 'pickup_persons', 'tags', 'children', 'event_days', 'staff']) {
+    for (const tbl of ['incident_updates', 'incident_reports', 'attendance_log', 'medical_notes', 'pickup_persons', 'tags', 'children', 'event_days', 'staff']) {
       await owner.query(`delete from ${tbl} where tenant_id = any($1)`, [ids]);
     }
   } finally {
@@ -165,6 +179,10 @@ async function main() {
   ok('A CANNOT see tenant B attendance', !(await sees(a.staffId, 'attendance_log', 'child_id', b.childId)));
   ok('A sees its own medical note', await sees(a.staffId, 'medical_notes', 'child_id', a.childId));
   ok('A CANNOT see tenant B medical note', !(await sees(a.staffId, 'medical_notes', 'child_id', b.childId)));
+  ok('A sees its own incident report', await sees(a.staffId, 'incident_reports', 'id', a.incidentId));
+  ok('A CANNOT see tenant B incident report', !(await sees(a.staffId, 'incident_reports', 'id', b.incidentId)));
+  ok('A sees its own incident update', await sees(a.staffId, 'incident_updates', 'incident_id', a.incidentId));
+  ok('A CANNOT see tenant B incident update', !(await sees(a.staffId, 'incident_updates', 'incident_id', b.incidentId)));
   ok('A sees its own staff', await sees(a.staffId, 'staff', 'id', a.staffId));
   ok('A CANNOT see tenant B staff', !(await sees(a.staffId, 'staff', 'id', b.staffId)));
   ok('A sees its own tenant row', await sees(a.staffId, 'tenants', 'id', a.t));

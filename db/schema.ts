@@ -37,6 +37,17 @@ const tenantId = () =>
 export const staffRole = pgEnum('staff_role', ['admin', 'receptionist', 'health']);
 export const attendanceAction = pgEnum('attendance_action', ['check_in', 'check_out']);
 export const noteSeverity = pgEnum('note_severity', ['routine', 'incident', 'emergency']);
+export const incidentCategory = pgEnum('incident_category', [
+  'safeguarding',
+  'medical_emergency',
+  'injury',
+  'abuse_suspicion',
+  'security_breach',
+  'theft_damage',
+  'other',
+]);
+export const incidentStatus = pgEnum('incident_status', ['submitted', 'escalated', 'investigating', 'resolved']);
+export const incidentUpdateKind = pgEnum('incident_update_kind', ['status_change', 'note', 'guardian_notified', 'signoff']);
 
 // ---------- tenants (E12 multi-tenant SaaS) ----------
 // One row per organisation. Every tenant-scoped table carries a tenant_id FK to here;
@@ -186,5 +197,45 @@ export const medicalNotes = pgTable('medical_notes', {
   noteText: text('note_text').notNull(),
   guardianNotified: boolean('guardian_notified').notNull().default(false),
   authorStaffId: uuid('author_staff_id').references(() => staff.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- incident_reports (append-only, tenant-scoped; E13-S1, safeguarding B-048) ----------
+// The immutable filed report. Broader than medical_notes — may involve an adult or a child
+// (child_id nullable). Append-only trigger + RLS added in migration 0013.
+export const incidentReports = pgTable('incident_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
+  childId: uuid('child_id').references(() => children.id, { onDelete: 'restrict' }),
+  category: incidentCategory('category').notNull(),
+  categoryOther: text('category_other'),
+  reporterStaffId: uuid('reporter_staff_id').references(() => staff.id, { onDelete: 'set null' }),
+  reporterName: text('reporter_name'),
+  reporterPhone: text('reporter_phone'),
+  reporterEmail: text('reporter_email'),
+  incidentAt: timestamp('incident_at', { withTimezone: true }),
+  location: text('location'),
+  personsInvolved: text('persons_involved'),
+  howInvolved: text('how_involved'),
+  narrative: text('narrative').notNull(),
+  keyNotes: text('key_notes'),
+  guardianNotified: boolean('guardian_notified').notNull().default(false),
+  guardianNotifiedAt: timestamp('guardian_notified_at', { withTimezone: true }),
+  filedAt: timestamp('filed_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- incident_updates (append-only workflow/audit log; E13-S1) ----------
+// One row per workflow action on an incident; the current status = the latest new_status.
+export const incidentUpdates = pgTable('incident_updates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: tenantId(),
+  incidentId: uuid('incident_id')
+    .notNull()
+    .references(() => incidentReports.id, { onDelete: 'cascade' }),
+  authorStaffId: uuid('author_staff_id').references(() => staff.id, { onDelete: 'set null' }),
+  kind: incidentUpdateKind('kind').notNull(),
+  newStatus: incidentStatus('new_status'),
+  note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
