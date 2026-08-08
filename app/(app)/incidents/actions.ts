@@ -1,11 +1,21 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/require-role';
 import { getChild } from '@/lib/children';
-import { fileIncident, INCIDENT_CATEGORIES, type IncidentCategory } from '@/lib/incidents';
+import {
+  fileIncident,
+  addIncidentUpdate,
+  getIncident,
+  INCIDENT_CATEGORIES,
+  INCIDENT_STATUSES,
+  type IncidentCategory,
+  type IncidentStatus,
+} from '@/lib/incidents';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CATEGORIES = new Set<string>(INCIDENT_CATEGORIES.map((c) => c.value));
+const STATUSES = new Set<string>(INCIDENT_STATUSES.map((s) => s.value));
 
 export type IncidentActionState = { error?: string; ok?: boolean };
 
@@ -77,5 +87,44 @@ export async function fileIncidentAction(
     return { error: 'Could not file the report. Please try again.' };
   }
 
+  return { ok: true };
+}
+
+/**
+ * Advance an incident's status (S5) or add a note — admin only. Resolving requires a resolution
+ * note (the CPO sign-off, S6). Every action is an append-only incident_updates row; the filed
+ * report is never edited.
+ */
+export async function updateIncidentAction(
+  _prev: IncidentActionState,
+  formData: FormData,
+): Promise<IncidentActionState> {
+  const staff = await requireRole(['admin']);
+  const get = (k: string) => ((formData.get(k) as string) ?? '').trim();
+
+  const incidentId = get('incidentId');
+  if (!incidentId) return { error: 'Missing incident.' };
+  // Confirm the incident is visible to this admin (own tenant) before writing an update.
+  const inc = await getIncident(staff.id, incidentId);
+  if (!inc) return { error: 'Incident not found.' };
+
+  const kind = get('kind');
+  const note = get('note');
+
+  if (kind === 'status_change') {
+    const newStatus = get('newStatus');
+    if (!STATUSES.has(newStatus)) return { error: 'Choose a status.' };
+    if (newStatus === inc.status && !note) return { error: 'That is already the current status — add a note if you meant to comment.' };
+    if (newStatus === 'resolved' && !note) return { error: 'A resolution note is required to resolve and sign off.' };
+    await addIncidentUpdate(staff.id, incidentId, { kind: 'status_change', newStatus: newStatus as IncidentStatus, note: note || null });
+  } else if (kind === 'note') {
+    if (!note) return { error: 'Write a note to add.' };
+    await addIncidentUpdate(staff.id, incidentId, { kind: 'note', newStatus: null, note });
+  } else {
+    return { error: 'Unknown action.' };
+  }
+
+  revalidatePath(`/incidents/${incidentId}`);
+  revalidatePath('/incidents');
   return { ok: true };
 }

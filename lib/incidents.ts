@@ -96,6 +96,32 @@ export async function fileIncident(staffId: string, input: NewIncidentInput) {
   );
 }
 
+export type IncidentUpdateInput = {
+  kind: 'status_change' | 'note';
+  newStatus: IncidentStatus | null;
+  note: string | null;
+};
+
+/**
+ * Append a workflow update to an incident (RLS `incident_updates_insert`: admin only).
+ * author_staff_id is forced to the acting admin; tenant is auto-stamped. The filed report is
+ * never edited — status transitions, notes and the sign-off are all rows in this append-only log.
+ */
+export async function addIncidentUpdate(staffId: string, incidentId: string, input: IncidentUpdateInput) {
+  return withStaffContext(staffId, (tx) =>
+    tx
+      .insert(incidentUpdates)
+      .values({
+        incidentId,
+        authorStaffId: staffId,
+        kind: input.kind,
+        newStatus: input.newStatus,
+        note: input.note,
+      })
+      .returning({ id: incidentUpdates.id }),
+  );
+}
+
 // Derived current status: the newest update carrying a new_status, else 'submitted'.
 const statusExpr = sql<string>`coalesce((
   select iu.new_status from incident_updates iu
