@@ -31,6 +31,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M4 17c0-3.3 2.7-5 6-5s6 1.7 6 5" />
     </svg>
   ),
+  incidents: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 3l7 13H3l7-13z" />
+      <line x1="10" y1="9" x2="10" y2="12" />
+      <line x1="10" y1="14" x2="10" y2="14" />
+    </svg>
+  ),
   reports: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
       <line x1="5" y1="16" x2="5" y2="12" />
