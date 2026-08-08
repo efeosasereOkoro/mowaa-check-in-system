@@ -1,23 +1,83 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { requireRole } from '@/lib/require-role';
 import { getChild } from '@/lib/children';
 import {
   fileIncident,
   addIncidentUpdate,
   getIncident,
+  getTenantAdminEmails,
+  CATEGORY_LABEL,
   INCIDENT_CATEGORIES,
   INCIDENT_STATUSES,
   type IncidentCategory,
   type IncidentStatus,
 } from '@/lib/incidents';
+import { sendIncidentNotification } from '@/lib/emails/incident-notification';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CATEGORIES = new Set<string>(INCIDENT_CATEGORIES.map((c) => c.value));
 const STATUSES = new Set<string>(INCIDENT_STATUSES.map((s) => s.value));
 
 export type IncidentActionState = { error?: string; ok?: boolean };
+
+const fmtWhen = (d: Date) =>
+  d.toLocaleString('en-GB', {
+    timeZone: 'Africa/Lagos',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+/**
+ * Best-effort: notify the tenant's Protection Officers (active admins) that an incident was
+ * filed or escalated (E13-S7). Recipients are resolved RLS-safely via tenant_admin_emails()
+ * (migration 0014), so a receptionist/health filer can trigger it without read access to staff.
+ * A summary + secure link only — the narrative and child identity stay behind login. Never
+ * throws: notification must not fail the filing/escalation if email is down or unconfigured.
+ */
+async function notifyProtectionOfficers(args: {
+  staffId: string;
+  event: 'filed' | 'escalated';
+  category: string;
+  reportedBy: string | null;
+  when: string | null;
+  incidentId: string | null;
+}): Promise<void> {
+  try {
+    const emails = await getTenantAdminEmails(args.staffId);
+    if (emails.length === 0) return;
+
+    const h = await headers();
+    const host = h.get('x-forwarded-host') ?? h.get('host');
+    const proto = h.get('x-forwarded-proto') ?? 'https';
+    const appUrl = process.env.APP_URL || (host ? `${proto}://${host}` : undefined);
+    const incidentUrl = appUrl && args.incidentId ? `${appUrl}/incidents/${args.incidentId}` : null;
+
+    await Promise.all(
+      emails.map((to) =>
+        sendIncidentNotification({
+          to,
+          event: args.event,
+          category: args.category,
+          reportedBy: args.reportedBy,
+          when: args.when,
+          incidentUrl,
+        }),
+      ),
+    );
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('incident notification failed', e);
+  }
+}
+
+const categoryLabelFor = (category: string, categoryOther: string | null) =>
+  category === 'other' && categoryOther ? categoryOther : CATEGORY_LABEL[category] ?? category;
 
 export async function fileIncidentAction(
   _prev: IncidentActionState,
@@ -64,8 +124,9 @@ export async function fileIncidentAction(
     guardianNotifiedAt = g;
   }
 
+  let incidentId: string | null = null;
   try {
-    await fileIncident(staff.id, {
+    const [created] = await fileIncident(staff.id, {
       childId,
       category: category as IncidentCategory,
       categoryOther: categoryOther || null,
@@ -81,11 +142,21 @@ export async function fileIncidentAction(
       guardianNotified,
       guardianNotifiedAt,
     });
+    incidentId = created?.id ?? null;
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error('file incident failed', e);
     return { error: 'Could not file the report. Please try again.' };
   }
+
+  await notifyProtectionOfficers({
+    staffId: staff.id,
+    event: 'filed',
+    category: categoryLabelFor(category, categoryOther || null),
+    reportedBy: staff.name,
+    when: fmtWhen(new Date()),
+    incidentId,
+  });
 
   return { ok: true };
 }
@@ -117,6 +188,19 @@ export async function updateIncidentAction(
     if (newStatus === inc.status && !note) return { error: 'That is already the current status — add a note if you meant to comment.' };
     if (newStatus === 'resolved' && !note) return { error: 'A resolution note is required to resolve and sign off.' };
     await addIncidentUpdate(staff.id, incidentId, { kind: 'status_change', newStatus: newStatus as IncidentStatus, note: note || null });
+
+    // Escalating to the CPO re-alerts the Protection Officers by email (E13-S7). Only on the
+    // transition into 'escalated', not on repeat submissions of the same status.
+    if (newStatus === 'escalated' && inc.status !== 'escalated') {
+      await notifyProtectionOfficers({
+        staffId: staff.id,
+        event: 'escalated',
+        category: categoryLabelFor(inc.category, inc.categoryOther),
+        reportedBy: inc.filedByStaff,
+        when: inc.filedAt,
+        incidentId,
+      });
+    }
   } else if (kind === 'note') {
     if (!note) return { error: 'Write a note to add.' };
     await addIncidentUpdate(staff.id, incidentId, { kind: 'note', newStatus: null, note });

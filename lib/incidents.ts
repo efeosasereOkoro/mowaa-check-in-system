@@ -96,6 +96,19 @@ export async function fileIncident(staffId: string, input: NewIncidentInput) {
   );
 }
 
+/**
+ * Active admin (Protection Officer) emails for the caller's own tenant, for incident
+ * notifications (E13-S7). Backed by the SECURITY DEFINER `tenant_admin_emails()` (migration
+ * 0014) so any on-duty staff can look them up without read access to `staff`. Server-only —
+ * the result is used as email recipients, never returned to the client.
+ */
+export async function getTenantAdminEmails(staffId: string): Promise<string[]> {
+  return withStaffContext(staffId, async (tx) => {
+    const res = await tx.execute(sql`select email from tenant_admin_emails()`);
+    return (res.rows as { email: string }[]).map((r) => r.email).filter(Boolean);
+  });
+}
+
 export type IncidentUpdateInput = {
   kind: 'status_change' | 'note';
   newStatus: IncidentStatus | null;
