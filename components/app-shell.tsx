@@ -20,9 +20,9 @@ const ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
   health: (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
-      <line x1="10" y1="4" x2="10" y2="16" />
-      <line x1="4" y1="10" x2="16" y2="10" />
+    // Outlined medical cross (distinct from the "+" add glyph now that filing lives in this bar).
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round">
+      <path d="M8 4h4v3h3v4h-3v3h-4v-3H5V7h3z" />
     </svg>
   ),
   children: (
@@ -32,10 +32,12 @@ const ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
   incidents: (
+    // Document with lines — a filed report (distinct from Health's cross and the "+" add glyph).
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 3l7 13H3l7-13z" />
-      <line x1="10" y1="9" x2="10" y2="12" />
-      <line x1="10" y1="14" x2="10" y2="14" />
+      <path d="M6 3h5l3 3v11H6z" />
+      <path d="M11 3v3h3" />
+      <line x1="8.5" y1="10" x2="11.5" y2="10" />
+      <line x1="8.5" y1="13" x2="11.5" y2="13" />
     </svg>
   ),
   reports: (
@@ -77,6 +79,10 @@ export default function AppShell({
   }, []);
 
   const isActive = (item: NavItem) => path === item.href || path.startsWith(item.href + '/');
+  // The mobile bottom bar takes at most five shift-time tabs; Users (a setup page) moves into
+  // the avatar menu. Desktop sidebar still lists everything the role can reach.
+  const barItems = nav.filter((item) => item.key !== 'users');
+  const menuItems = nav.filter((item) => item.key === 'users');
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -97,7 +103,7 @@ export default function AppShell({
         </div>
         {narrow ? (
           <div style={{ marginLeft: 'auto' }}>
-            <AccountMenu userName={userName} roleLabel={roleLabel} />
+            <AccountMenu userName={userName} roleLabel={roleLabel} extraNav={menuItems} />
           </div>
         ) : (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -136,11 +142,11 @@ export default function AppShell({
               background: '#fff',
               borderTop: '1px solid #E0E0E0',
               display: 'grid',
-              gridTemplateColumns: `repeat(${nav.length}, 1fr)`,
+              gridTemplateColumns: `repeat(${barItems.length}, 1fr)`,
               paddingBottom: 'env(safe-area-inset-bottom)',
             }}
           >
-            {nav.map((item) => {
+            {barItems.map((item) => {
               const active = isActive(item);
               const icon = ICONS[item.key];
               return (

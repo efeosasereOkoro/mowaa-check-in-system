@@ -145,6 +145,8 @@ export type IncidentListItem = {
   categoryOther: string | null;
   childName: string | null;
   reportedBy: string | null;
+  location: string | null;
+  personsInvolved: string | null;
   incidentAt: string | null;
   filedAt: string | null;
   guardianNotified: boolean;
@@ -163,6 +165,8 @@ export async function listIncidents(staffId: string): Promise<IncidentListItem[]
         childLast: children.lastName,
         staffName: staff.name,
         externalReporter: incidentReports.reporterName,
+        location: incidentReports.location,
+        personsInvolved: incidentReports.personsInvolved,
         incidentAt: incidentReports.incidentAt,
         filedAt: incidentReports.filedAt,
         guardianNotified: incidentReports.guardianNotified,
@@ -179,6 +183,8 @@ export async function listIncidents(staffId: string): Promise<IncidentListItem[]
       categoryOther: r.categoryOther,
       childName: r.childFirst ? `${r.childFirst} ${r.childLast}` : null,
       reportedBy: r.staffName ?? r.externalReporter ?? null,
+      location: r.location,
+      personsInvolved: r.personsInvolved,
       incidentAt: fmt(r.incidentAt),
       filedAt: fmt(r.filedAt),
       guardianNotified: r.guardianNotified,
