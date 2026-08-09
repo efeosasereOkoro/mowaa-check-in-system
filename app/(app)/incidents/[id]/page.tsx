@@ -46,6 +46,12 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', margin: '0 0 20px' }}>
         <h1 style={{ fontSize: 26, fontWeight: 400, margin: 0 }}>{category}</h1>
         <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', background: sm.bg, color: sm.color }}>{STATUS_LABEL[inc.status] ?? inc.status}</span>
+        <Link
+          href={`/incident-report?incident=${inc.id}`}
+          style={{ marginLeft: 'auto', height: 36, padding: '0 14px', border: '1px solid #161616', color: '#161616', fontSize: 13, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+        >
+          Print / PDF
+        </Link>
       </div>
 
       <section style={{ background: '#fff', border: '1px solid #E0E0E0', padding: 20 }}>
