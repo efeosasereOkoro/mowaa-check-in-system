@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
+
+type MenuNav = { key: string; label: string; href: string };
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -12,7 +15,7 @@ function initials(name: string): string {
 // Narrow header account control: a circular avatar (initials) that opens a popover
 // with the name, role, and Sign out. Sign-out is rare, so it's tucked here rather than
 // being the loudest thing on the screen.
-export default function AccountMenu({ userName, roleLabel }: { userName: string; roleLabel: string }) {
+export default function AccountMenu({ userName, roleLabel, extraNav = [] }: { userName: string; roleLabel: string; extraNav?: MenuNav[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -55,7 +58,22 @@ export default function AccountMenu({ userName, roleLabel }: { userName: string;
           style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 60, minWidth: 200, background: '#fff', border: '1px solid #E0E0E0', boxShadow: '0 4px 14px rgba(0,0,0,0.16)', padding: 16 }}
         >
           <div style={{ fontSize: 14, fontWeight: 600, color: '#161616', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
-          <div style={{ fontSize: 12, color: '#525252', marginBottom: 14 }}>{roleLabel}</div>
+          <div style={{ fontSize: 12, color: '#525252', marginBottom: extraNav.length ? 10 : 14 }}>{roleLabel}</div>
+          {extraNav.length > 0 && (
+            <div style={{ borderTop: '1px solid #E0E0E0', margin: '0 -16px 10px', paddingTop: 6 }}>
+              {extraNav.map((item) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  style={{ display: 'flex', alignItems: 'center', minHeight: 44, padding: '0 16px', fontSize: 14, color: '#161616', textDecoration: 'none' }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          )}
           <LogoutButton />
         </div>
       )}

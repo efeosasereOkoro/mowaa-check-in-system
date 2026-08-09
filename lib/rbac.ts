@@ -11,7 +11,7 @@ export type NavItem = { key: string; label: string; href: string; roles: StaffRo
 export const NAV: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard', roles: ['receptionist', 'admin'] },
   { key: 'health', label: 'Health', href: '/health', roles: ['health', 'admin'] },
-  { key: 'incidents', label: 'Incident', href: '/incidents', roles: ['receptionist', 'admin', 'health'] },
+  { key: 'incidents', label: 'Incidents', href: '/incidents', roles: ['receptionist', 'admin', 'health'] },
   { key: 'children', label: 'Children', href: '/children', roles: ['admin'] },
   { key: 'reports', label: 'Reports', href: '/reports', roles: ['admin'] },
   { key: 'users', label: 'Users', href: '/users', roles: ['admin'] },
