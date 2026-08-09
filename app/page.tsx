@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'SmartTag Check-In — child check-in & check-out',
   description:
-    'QR-based child check-in and check-out for camps, kids’ events, schools and churches. Role-based, safeguarding-first, works on any phone.',
+    'QR child check-in and check-out, medical notes and safeguarding incident reports for camps, kids’ events, schools and churches. Role-based, on any phone.',
 };
 
 const shell: React.CSSProperties = { minHeight: '100vh', background: '#F4F4F4', padding: 32 };

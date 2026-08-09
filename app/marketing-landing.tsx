@@ -258,11 +258,11 @@ export default function MarketingLanding() {
               <div>
                 <span className="lp-badge">Child check-in, safeguarding &amp; incidents</span>
                 <h1 className="lp-h1 lp-display">
-                  Know who’s on-site — and <span className="lp-mark">who took them home.</span>
+                  Every child accounted for — from check-in to <span className="lp-mark">safe handover.</span>
                 </h1>
                 <p className="lp-sub">
-                  QR-based check-in and check-out for camps, kids’ events, schools and churches. Role-based,
-                  safeguarding-first, and it runs on any phone.
+                  QR-based check-in and check-out — with medical notes and safeguarding incident reports built in —
+                  for camps, kids’ events, schools and churches. Role-based, and runs on any phone.
                 </p>
                 <div className="lp-cta-row">
                   <Link href="/sign-in" className="lp-btn lp-btn-primary lp-btn-lg">
