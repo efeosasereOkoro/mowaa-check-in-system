@@ -3,7 +3,7 @@ import Link from 'next/link';
 import LegalPage from '@/components/legal-page';
 
 // Update this whenever the content below changes.
-const LAST_UPDATED = '31 July 2026';
+const LAST_UPDATED = '9 August 2026';
 
 export const metadata: Metadata = {
   title: 'Terms of use',
@@ -40,6 +40,7 @@ export default function TermsPage() {
         <li>get consent from a child’s guardian before storing their details, especially health information</li>
         <li>keep the information accurate and up to date</li>
         <li>follow your organisation’s safeguarding and data protection rules</li>
+        <li>report safeguarding or welfare concerns and incidents promptly and accurately, following your organisation’s safeguarding protocol, and only open incident reports if your role allows it</li>
         <li>check the right person is collecting a child before you check them out</li>
       </ul>
 

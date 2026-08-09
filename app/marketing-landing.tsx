@@ -193,6 +193,12 @@ const features: { title: string; body: string; icon: React.ReactNode; tone: Tone
     tone: 'mint',
   },
   {
+    title: 'Incident & safeguarding reports',
+    body: 'File a safeguarding or incident report in minutes. It routes to the Protection Officer, moves through review to sign-off, and alerts admins by email — with the sensitive detail kept behind login.',
+    icon: (<><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" /><path d="M8 6H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-2" /><path d="M12 10.5v3.5M12 17h.01" /></>),
+    tone: 'rose',
+  },
+  {
     title: 'Roles that fit the desk',
     body: 'Reception, Health Officer and Admin each see exactly what they need — enforced at the database, not just hidden in the UI.',
     icon: (<><circle cx="9" cy="8" r="3" /><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5" /><path d="M16 6a3 3 0 0 1 0 6M18 15c2.2.2 3.5 1.8 3.5 4" /></>),
@@ -250,13 +256,13 @@ export default function MarketingLanding() {
           <div className="lp-wrap">
             <div className="lp-hero-grid">
               <div>
-                <span className="lp-badge">Child check-in &amp; check-out</span>
+                <span className="lp-badge">Child check-in, safeguarding &amp; incidents</span>
                 <h1 className="lp-h1 lp-display">
-                  Know who’s on-site — and <span className="lp-mark">who took them home.</span>
+                  Every child accounted for — from check-in to <span className="lp-mark">safe handover.</span>
                 </h1>
                 <p className="lp-sub">
-                  QR-based check-in and check-out for camps, kids’ events, schools and churches. Role-based,
-                  safeguarding-first, and it runs on any phone.
+                  QR-based check-in and check-out — with medical notes and safeguarding incident reports built in —
+                  for camps, kids’ events, schools and churches. Role-based, and runs on any phone.
                 </p>
                 <div className="lp-cta-row">
                   <Link href="/sign-in" className="lp-btn lp-btn-primary lp-btn-lg">

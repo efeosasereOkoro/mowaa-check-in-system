@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import LegalPage from '@/components/legal-page';
 
 // Update this whenever the content below changes.
-const LAST_UPDATED = '4 August 2026';
+const LAST_UPDATED = '9 August 2026';
 
 export const metadata: Metadata = {
   title: 'Privacy policy',
@@ -51,6 +51,17 @@ export default function PrivacyPage() {
       <ul>
         <li>their name, email address and role — for example receptionist, health officer or admin</li>
       </ul>
+      <p>About safeguarding and incidents:</p>
+      <ul>
+        <li>an incident or safeguarding report, if staff record one — the type of incident and a written account of what happened, and where and when it happened</li>
+        <li>the people involved and how — which may be a child, a member of staff or another adult (an incident need not involve a specific child)</li>
+        <li>whether and when the child’s guardian was told</li>
+        <li>who filed the report, and the notes, status changes and sign-off recorded as it is reviewed</li>
+      </ul>
+      <p>
+        Some incident reports contain sensitive information — for example a medical emergency or a safeguarding concern — so we treat
+        them as <strong>special category information</strong>.
+      </p>
       <p>We do not collect payment details.</p>
 
       <h2 id="why">Why we collect it</h2>
@@ -58,12 +69,13 @@ export default function PrivacyPage() {
       <ul>
         <li>know who is on site and who has been collected</li>
         <li>keep children safe</li>
-        <li>record medical needs and any incidents</li>
+        <li>record medical needs, and record and respond to safeguarding concerns and incidents</li>
         <li>let an organisation see attendance and export reports</li>
       </ul>
       <p>
-        Health and medical details are <strong>special category information</strong>. We only hold them where the organisation has a
-        clear reason and the guardian’s consent.
+        Health and medical details, and some incident reports, are <strong>special category information</strong>. We hold them only where
+        the organisation has a clear reason — usually the guardian’s consent, and for safeguarding a legal duty or the need to protect
+        someone.
       </p>
 
       <h2 id="who-can-see">Who can see it</h2>
@@ -81,6 +93,10 @@ export default function PrivacyPage() {
         </li>
       </ul>
       <p>These limits are enforced by the database, not just hidden on screen. Someone from one organisation can never see another organisation’s information.</p>
+      <p>
+        Safeguarding and incident reports are visible only to <strong>Admins</strong>, who act as the organisation’s Child Protection
+        Officer. Any member of staff on duty can file one, but only Admins can read and manage them.
+      </p>
 
       <h2 id="sharing">Who we share it with</h2>
       <p>We do not sell your information. We share it only with the services that run the app for us:</p>
@@ -95,6 +111,7 @@ export default function PrivacyPage() {
         We keep information for as long as the organisation needs it to run their event and meet their record-keeping duties. Ask the
         organisation about their retention period. When it’s no longer needed, it is deleted.
       </p>
+      <p>Safeguarding and incident records may be kept for longer where the organisation has a legal or regulatory duty to retain them.</p>
 
       <h2 id="your-rights">Your rights</h2>
       <p>You can ask to:</p>
@@ -109,8 +126,8 @@ export default function PrivacyPage() {
 
       <h2 id="security">How we keep it safe</h2>
       <p>
-        We limit access by role, encrypt the database, use HTTPS, and keep an append-only record of check-ins and medical notes so they
-        can’t be quietly changed. Only vetted staff get access.
+        We limit access by role, encrypt the database, use HTTPS, and keep an append-only record of check-ins, medical notes and incident
+        reports so they can’t be quietly changed. Only vetted staff get access.
       </p>
 
       <h2 id="children">Children’s information</h2>
