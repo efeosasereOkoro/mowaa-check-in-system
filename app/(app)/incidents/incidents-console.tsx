@@ -42,6 +42,15 @@ export default function IncidentsConsole({ incidents }: { incidents: IncidentLis
     [incidents, category, status],
   );
 
+  // Export the current view — the CSV route applies the same category/status filters server-side.
+  const exportUrl = useMemo(() => {
+    const p = new URLSearchParams();
+    if (category !== 'all') p.set('category', category);
+    if (status !== 'all') p.set('status', status);
+    const q = p.toString();
+    return `/api/reports/incidents${q ? `?${q}` : ''}`;
+  }, [category, status]);
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
@@ -64,6 +73,12 @@ export default function IncidentsConsole({ incidents }: { incidents: IncidentLis
         <span style={{ fontSize: 13, color: '#525252' }}>
           {filtered.length} of {incidents.length}
         </span>
+        <a
+          href={exportUrl}
+          style={{ marginLeft: 'auto', height: 40, padding: '0 14px', border: '1px solid #161616', color: '#161616', background: '#fff', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+        >
+          Export CSV
+        </a>
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E0E0E0', overflowX: 'auto' }}>

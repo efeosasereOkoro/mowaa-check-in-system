@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/require-role';
 import { getChildAttendance } from '@/lib/attendance';
 import { getChildMedical } from '@/lib/medical';
 import { EVENT_NAME } from '@/lib/event';
+import { formatEventDateTime } from '@/lib/datetime';
 import { AttendanceTable, MedicalNotesList } from '@/components/child-record';
 import PrintButton from '@/components/print-button';
 
@@ -24,14 +25,7 @@ export default async function ChildReportPage({ searchParams }: { searchParams: 
   const attendance = await getChildAttendance(staff.id, childId);
   const canSeeHealth = staff.role === 'admin' || staff.role === 'health';
 
-  const generated = new Date().toLocaleString('en-GB', {
-    timeZone: 'Africa/Lagos',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const generated = formatEventDateTime(new Date()) ?? '';
 
   const detail = (label: string, value: string | number | null) => (
     <div>
