@@ -1,5 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { withStaffContext } from '@/lib/db-authenticated';
+import { formatEventDateTime } from '@/lib/datetime';
 import { incidentReports, incidentUpdates, children, staff } from '@/db/schema';
 
 // Incident reporting (E13, B-048). The category list is the single source for the form select,
@@ -34,18 +35,14 @@ export const STATUS_LABEL: Record<string, string> = Object.fromEntries(
   INCIDENT_STATUSES.map((s) => [s.value, s.label]),
 );
 
-function fmt(v: unknown): string | null {
-  if (!v) return null;
-  const d = v instanceof Date ? v : new Date(String(v));
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString('en-GB', {
-    timeZone: 'Africa/Lagos',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const fmt = (v: unknown): string | null => formatEventDateTime(v as Date | string | number | null | undefined);
+
+/**
+ * Display label for an incident's category, expanding the free-text 'other'. Shared by the
+ * console detail page, the printable report and the CSV export so the three never diverge.
+ */
+export function incidentCategoryLabel(c: { category: string; categoryOther: string | null }): string {
+  return c.category === 'other' && c.categoryOther ? `Other — ${c.categoryOther}` : CATEGORY_LABEL[c.category] ?? c.category;
 }
 
 export type NewIncidentInput = {
@@ -191,6 +188,36 @@ export async function listIncidents(staffId: string): Promise<IncidentListItem[]
 }
 
 export type IncidentUpdateItem = { id: string; kind: string; newStatus: string | null; note: string | null; author: string | null; at: string | null };
+
+export type IncidentOfficialRecord = {
+  escalatedAt: string | null;
+  investigationStartedAt: string | null;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+  /** "<time> · <author>" sign-off convenience, or null until resolved. */
+  signOff: string | null;
+};
+
+/**
+ * The official-reporting milestones derived from an incident's update timeline (E13-S6/S8):
+ * escalation, investigation start, and resolution + CPO sign-off. Shared by the console detail
+ * page and the printable report so the printed official record can never drift from the console.
+ */
+export function incidentOfficialRecord(updates: IncidentUpdateItem[]): IncidentOfficialRecord {
+  const resolved = updates.find((u) => u.newStatus === 'resolved');
+  const escalated = updates.find((u) => u.newStatus === 'escalated');
+  const investigating = updates.find((u) => u.newStatus === 'investigating');
+  return {
+    escalatedAt: escalated?.at ?? null,
+    investigationStartedAt: investigating?.at ?? null,
+    resolvedAt: resolved?.at ?? null,
+    resolvedBy: resolved?.author ?? null,
+    resolution: resolved?.note ?? null,
+    signOff: resolved ? `${resolved.at ?? ''}${resolved.author ? ` · ${resolved.author}` : ''}` : null,
+  };
+}
+
 export type IncidentDetail = {
   id: string;
   category: IncidentCategory;

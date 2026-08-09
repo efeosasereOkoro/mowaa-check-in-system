@@ -3,8 +3,8 @@ import {
   listIncidents,
   INCIDENT_CATEGORIES,
   INCIDENT_STATUSES,
-  CATEGORY_LABEL,
   STATUS_LABEL,
+  incidentCategoryLabel,
 } from '@/lib/incidents';
 import { buildCsv } from '@/lib/reports';
 
@@ -27,16 +27,19 @@ export async function GET(req: Request) {
   const sp = new URL(req.url).searchParams;
   const category = sp.get('category');
   const status = sp.get('status');
+  // Reject a malformed filter rather than silently exporting the whole log.
+  if (category && category !== 'all' && !CATEGORIES.has(category)) return new Response('Bad Request', { status: 400 });
+  if (status && status !== 'all' && !STATUSES.has(status)) return new Response('Bad Request', { status: 400 });
 
   let rows = await listIncidents(current.staff.id);
-  if (category && category !== 'all' && CATEGORIES.has(category)) rows = rows.filter((r) => r.category === category);
-  if (status && status !== 'all' && STATUSES.has(status)) rows = rows.filter((r) => r.status === status);
+  if (category && category !== 'all') rows = rows.filter((r) => r.category === category);
+  if (status && status !== 'all') rows = rows.filter((r) => r.status === status);
 
   const csv = buildCsv(
     ['Filed', 'Type', 'Status', 'Child', 'Reported by', 'When it happened', 'Guardian notified'],
     rows.map((r) => [
       r.filedAt ?? '',
-      r.category === 'other' && r.categoryOther ? `Other — ${r.categoryOther}` : CATEGORY_LABEL[r.category] ?? r.category,
+      incidentCategoryLabel(r),
       STATUS_LABEL[r.status] ?? r.status,
       r.childName ?? '',
       r.reportedBy ?? '',
@@ -45,10 +48,7 @@ export async function GET(req: Request) {
     ]),
   );
 
-  const suffix = [
-    category && category !== 'all' && CATEGORIES.has(category) ? category : null,
-    status && status !== 'all' && STATUSES.has(status) ? status : null,
-  ]
+  const suffix = [category && category !== 'all' ? category : null, status && status !== 'all' ? status : null]
     .filter(Boolean)
     .join('_');
   const fname = suffix ? `incidents_${suffix}` : 'incidents';

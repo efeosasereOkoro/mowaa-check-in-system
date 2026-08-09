@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/require-role';
-import { getIncident, CATEGORY_LABEL, STATUS_LABEL } from '@/lib/incidents';
+import { getIncident, STATUS_LABEL, incidentCategoryLabel, incidentOfficialRecord } from '@/lib/incidents';
+import { formatEventDateTime } from '@/lib/datetime';
 import { EVENT_NAME } from '@/lib/event';
 import PrintButton from '@/components/print-button';
 
@@ -18,23 +19,12 @@ export default async function IncidentReportPage({ searchParams }: { searchParam
   const inc = await getIncident(staff.id, id);
   if (!inc) notFound();
 
-  const category = inc.category === 'other' && inc.categoryOther ? `Other — ${inc.categoryOther}` : CATEGORY_LABEL[inc.category] ?? inc.category;
+  const category = incidentCategoryLabel(inc);
   const guardian = inc.guardianNotified ? `Yes${inc.guardianNotifiedAt ? ` — ${inc.guardianNotifiedAt}` : ''}` : 'No';
   const externalReporter = [inc.reporterName, inc.reporterPhone, inc.reporterEmail].filter(Boolean).join(' · ') || null;
 
-  const resolved = inc.updates.find((u) => u.newStatus === 'resolved');
-  const escalated = inc.updates.find((u) => u.newStatus === 'escalated');
-  const investigating = inc.updates.find((u) => u.newStatus === 'investigating');
-  const signOff = resolved ? `${resolved.at ?? ''}${resolved.author ? ` · ${resolved.author}` : ''}` : null;
-
-  const generated = new Date().toLocaleString('en-GB', {
-    timeZone: 'Africa/Lagos',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const rec = incidentOfficialRecord(inc.updates);
+  const generated = formatEventDateTime(new Date()) ?? '';
 
   const field = (label: string, value: string | null, block?: boolean) => (
     <div style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: 12, padding: '9px 0', borderTop: '1px solid #F0F0F0', fontSize: 14 }}>
@@ -89,10 +79,10 @@ export default async function IncidentReportPage({ searchParams }: { searchParam
       <section style={{ border: '1px solid #C6C6C6', borderLeft: '3px solid #161616', padding: '12px 16px', marginBottom: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 2px' }}>For official MOWAA reporting only</h2>
         <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>Completed by the Child Protection Officer.</div>
-        {field('Escalated to CPO', escalated?.at ?? null)}
-        {field('Investigation started', investigating?.at ?? null)}
-        {field('Resolved & signed off', signOff)}
-        {field('Resolution', resolved?.note ?? null, true)}
+        {field('Escalated to CPO', rec.escalatedAt)}
+        {field('Investigation started', rec.investigationStartedAt)}
+        {field('Resolved & signed off', rec.signOff)}
+        {field('Resolution', rec.resolution, true)}
       </section>
 
       <section>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/require-role';
-import { getIncident, CATEGORY_LABEL, STATUS_LABEL } from '@/lib/incidents';
+import { getIncident, STATUS_LABEL, incidentCategoryLabel, incidentOfficialRecord } from '@/lib/incidents';
 import IncidentActions from './incident-actions';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,8 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
   if (!inc) notFound();
 
   const sm = STATUS_META[inc.status] ?? STATUS_META.submitted;
-  const category = inc.category === 'other' && inc.categoryOther ? `Other — ${inc.categoryOther}` : CATEGORY_LABEL[inc.category] ?? inc.category;
+  const category = incidentCategoryLabel(inc);
+  const rec = incidentOfficialRecord(inc.updates);
 
   return (
     <div style={{ maxWidth: 760 }}>
@@ -73,25 +74,16 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         )}
       </section>
 
-      {inc.status === 'resolved' &&
-        (() => {
-          const resolved = inc.updates.find((u) => u.newStatus === 'resolved');
-          const escalated = inc.updates.find((u) => u.newStatus === 'escalated');
-          const investigating = inc.updates.find((u) => u.newStatus === 'investigating');
-          return (
-            <section style={{ background: '#F4FBF6', border: '1px solid #A7F0BA', borderLeft: '3px solid #0E6027', padding: 20, marginTop: 20 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 4px', color: '#0E6027' }}>Official record</h2>
-              <div style={{ fontSize: 12, color: '#525252', marginBottom: 8 }}>For official MOWAA reporting.</div>
-              <Field label="Escalated to CPO" value={escalated?.at ?? null} />
-              <Field label="Investigation started" value={investigating?.at ?? null} />
-              <Field
-                label="Resolved & signed off"
-                value={resolved ? `${resolved.at ?? ''}${resolved.author ? ` · ${resolved.author}` : ''}` : null}
-              />
-              <Field label="Resolution" value={resolved?.note ?? null} block />
-            </section>
-          );
-        })()}
+      {inc.status === 'resolved' && (
+        <section style={{ background: '#F4FBF6', border: '1px solid #A7F0BA', borderLeft: '3px solid #0E6027', padding: 20, marginTop: 20 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 4px', color: '#0E6027' }}>Official record</h2>
+          <div style={{ fontSize: 12, color: '#525252', marginBottom: 8 }}>For official MOWAA reporting.</div>
+          <Field label="Escalated to CPO" value={rec.escalatedAt} />
+          <Field label="Investigation started" value={rec.investigationStartedAt} />
+          <Field label="Resolved & signed off" value={rec.signOff} />
+          <Field label="Resolution" value={rec.resolution} block />
+        </section>
+      )}
 
       <h2 style={sectionH2}>Case history</h2>
       {inc.updates.length === 0 ? (

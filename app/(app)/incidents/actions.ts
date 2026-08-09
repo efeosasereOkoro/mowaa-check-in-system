@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { requireRole } from '@/lib/require-role';
 import { getChild } from '@/lib/children';
+import { formatEventDateTime } from '@/lib/datetime';
 import {
   fileIncident,
   addIncidentUpdate,
@@ -22,16 +23,6 @@ const CATEGORIES = new Set<string>(INCIDENT_CATEGORIES.map((c) => c.value));
 const STATUSES = new Set<string>(INCIDENT_STATUSES.map((s) => s.value));
 
 export type IncidentActionState = { error?: string; ok?: boolean };
-
-const fmtWhen = (d: Date) =>
-  d.toLocaleString('en-GB', {
-    timeZone: 'Africa/Lagos',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
 /**
  * Best-effort: notify the tenant's Protection Officers (active admins) that an incident was
@@ -154,7 +145,7 @@ export async function fileIncidentAction(
     event: 'filed',
     category: categoryLabelFor(category, categoryOther || null),
     reportedBy: staff.name,
-    when: fmtWhen(new Date()),
+    when: formatEventDateTime(new Date()),
     incidentId,
   });
 
