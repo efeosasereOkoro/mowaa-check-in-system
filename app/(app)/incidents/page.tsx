@@ -1,12 +1,18 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/require-role';
 import { listIncidents } from '@/lib/incidents';
-import { MobileOnly, DesktopOnly } from '@/components/viewport';
+import { PageBand } from '@/components/console';
 import IncidentsTable from './incidents-table';
-import FileIncidentBar from './file-incident-bar';
 
 export const dynamic = 'force-dynamic';
+
+// Plain SVG node (no handlers) — safe to pass from this server component into the client band.
+const Plus = (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" style={{ flex: 'none' }}>
+    <line x1="8" y1="3" x2="8" y2="13" />
+    <line x1="3" y1="8" x2="13" y2="8" />
+  </svg>
+);
 
 export default async function IncidentsPage() {
   const staff = await requireRole(['admin', 'receptionist', 'health']);
@@ -18,33 +24,17 @@ export default async function IncidentsPage() {
   const openCount = incidents.filter((i) => i.status !== 'resolved').length;
 
   return (
-    <div style={{ maxWidth: 1000 }}>
-      <MobileOnly>
-        <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.2 }}>Incidents</div>
-        <div style={{ fontSize: 13, color: '#525252', margin: '2px 0 12px' }}>
-          {total === 0 ? 'No reports filed' : `${total} reports · ${openCount} open`}
-        </div>
-      </MobileOnly>
-
-      <DesktopOnly>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', margin: '0 0 8px' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Incidents</h1>
-          {/* Filing is constructive, not an emergency — primary blue, not #DA1E28. */}
-          <Link
-            href="/incidents/new"
-            style={{ marginLeft: 'auto', height: 40, padding: '0 16px', background: '#0F62FE', color: '#fff', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
-          >
-            + File an incident
-          </Link>
-        </div>
-        <p style={{ fontSize: 14, color: '#525252', margin: '0 0 20px' }}>
-          Safeguarding &amp; incident reports for your organisation. Open one to read the full report.
-        </p>
-      </DesktopOnly>
-
+    <div style={{ maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageBand
+        title="Incidents"
+        context={total === 0 ? 'No reports filed' : `${total} reports · ${openCount} open`}
+        actions={[
+          // Export is page-level (the full log); the toolbar chips are a view filter.
+          { key: 'export', label: 'Export CSV', href: '/api/reports/incidents' },
+          { key: 'file', label: 'File an incident', href: '/incidents/new', primary: true, icon: Plus },
+        ]}
+      />
       <IncidentsTable incidents={incidents} />
-
-      <FileIncidentBar />
     </div>
   );
 }
