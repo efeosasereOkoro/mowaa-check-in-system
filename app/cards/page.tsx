@@ -58,13 +58,30 @@ export default async function CardsPage({ searchParams }: { searchParams: Promis
         }
       `}</style>
 
-      <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link href={single && kids[0] ? `/children/${kids[0].id}` : '/children'} style={{ color: '#0F62FE', fontSize: 14 }}>
-          ← Back{single && kids[0] ? ` to ${kids[0].firstName}` : ' to Children'}
-        </Link>
-        <h1 style={{ fontSize: 24, fontWeight: 400, margin: 0, flex: 1, minWidth: 200 }}>{single ? 'ID card' : 'ID cards'}</h1>
-        <span style={{ fontSize: 13, color: '#525252' }}>{kids.length} card{kids.length === 1 ? '' : 's'}</span>
-        <PrintButton />
+      <div className="no-print" style={{ background: '#fff', border: '1px solid #E0E0E0', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>
+            <Link href="/children" style={{ color: '#0F62FE' }}>
+              Children
+            </Link>{' '}
+            / {single ? 'ID card' : 'ID cards'}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>{single ? 'ID card' : 'ID cards'}</h1>
+            <span style={{ fontSize: 15, color: '#525252' }}>
+              {kids.length} card{kids.length === 1 ? '' : 's'} · 85 × 54 mm
+            </span>
+          </div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Link
+            href={single && kids[0] ? `/children/${kids[0].id}` : '/children'}
+            style={{ height: 40, padding: '0 14px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 14, display: 'inline-flex', alignItems: 'center', textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            ← Back{single && kids[0] ? ` to ${kids[0].firstName}` : ' to Children'}
+          </Link>
+          <PrintButton />
+        </div>
       </div>
       <p className="no-print" style={{ fontSize: 13, color: '#525252', marginTop: 0, marginBottom: 20, maxWidth: 560 }}>
         Each card carries the child&apos;s name, a QR code, the tag number, and the event name. Print on card stock,
