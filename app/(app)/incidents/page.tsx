@@ -21,7 +21,9 @@ export default async function IncidentsPage() {
 
   const incidents = await listIncidents(staff.id);
   const total = incidents.length;
-  const openCount = incidents.filter((i) => i.status !== 'resolved').length;
+  // "Open" matches the Open chip/segment (submitted or under investigation); Escalated and
+  // Resolved are their own buckets, so the band count and the chip never disagree.
+  const openCount = incidents.filter((i) => i.status === 'submitted' || i.status === 'investigating').length;
 
   return (
     <div style={{ maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 24 }}>
