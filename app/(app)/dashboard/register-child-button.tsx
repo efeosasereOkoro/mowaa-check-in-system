@@ -21,7 +21,7 @@ export default function RegisterChildButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 16px', background: '#0F62FE', color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+        style={{ display: 'inline-flex', width: narrow ? '100%' : 'auto', justifyContent: 'center', alignItems: 'center', gap: 6, height: narrow ? 44 : 40, padding: '0 16px', background: '#0F62FE', color: '#fff', border: 'none', fontSize: narrow ? 15 : 14, fontWeight: 600, cursor: 'pointer' }}
       >
         + Register
       </button>

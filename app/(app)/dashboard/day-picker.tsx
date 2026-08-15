@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 export type DayItem = {
   id: string;
@@ -33,7 +33,7 @@ function cellStyle(size: number, sharedLeft: boolean, enabled: boolean): React.C
     alignItems: 'center',
     justifyContent: 'center',
     background: '#fff',
-    border: '1px solid #E0E0E0',
+    border: '1px solid #161616',
     ...(sharedLeft ? { borderLeft: 'none' } : {}),
     color: enabled ? '#161616' : '#C6C6C6',
     fontSize: 18,
@@ -42,7 +42,7 @@ function cellStyle(size: number, sharedLeft: boolean, enabled: boolean): React.C
   };
 }
 
-export default function DayPicker({ items, selectedId }: { items: DayItem[]; selectedId: string }) {
+export default function DayPicker({ items, selectedId, registered, register }: { items: DayItem[]; selectedId: string; registered: number; register: ReactNode }) {
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const check = () => setNarrow(window.innerWidth < 672);
@@ -174,6 +174,8 @@ export default function DayPicker({ items, selectedId }: { items: DayItem[]; sel
           </div>
         </div>
 
+        <div style={{ marginBottom: 14 }}>{register}</div>
+
         {!isCurrent && current && (
           <Link href={`/dashboard?day=${current.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 44, background: '#0F62FE', color: '#fff', fontSize: 14, textDecoration: 'none', marginBottom: 12 }}>
             Go to today
@@ -186,32 +188,35 @@ export default function DayPicker({ items, selectedId }: { items: DayItem[]; sel
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ background: '#fff', border: '1px solid #E0E0E0', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>{selected.short}</h1>
-        <div style={{ fontSize: 15, color: '#525252' }}>{selected.long}</div>
+        <div style={{ fontSize: 15, color: '#525252' }}>
+          {selected.long} · {registered} registered
+        </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flex: 'none' }}>
-            {step(prev, '‹', 36, false)}
-            {step(next, '›', 36, true)}
+            {step(prev, '‹', 40, false)}
+            {step(next, '›', 40, true)}
           </div>
           <div ref={ddRef} style={{ position: 'relative', flex: 'none' }}>
             <button
               onClick={() => setOpen((o) => !o)}
-              style={{ height: 36, padding: '0 12px', background: '#fff', border: '1px solid #E0E0E0', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              style={{ height: 40, padding: '0 12px', background: '#fff', border: '1px solid #161616', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
             >
               All days <span style={{ fontSize: 10 }}>{CARET}</span>
             </button>
             {open && panel}
           </div>
           {!isCurrent && current && (
-            <Link href={`/dashboard?day=${current.id}`} style={{ height: 36, display: 'flex', alignItems: 'center', padding: '0 14px', background: '#0F62FE', color: '#fff', fontSize: 13, textDecoration: 'none', flex: 'none' }}>
+            <Link href={`/dashboard?day=${current.id}`} style={{ height: 40, display: 'flex', alignItems: 'center', padding: '0 14px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 14, textDecoration: 'none', flex: 'none' }}>
               Go to today
             </Link>
           )}
+          {register}
         </div>
       </div>
       {!isCurrent && (
-        <div style={noticeBox}>
+        <div style={{ ...noticeBox, marginTop: 16, marginBottom: 0 }}>
           Viewing <strong>{selected.full}</strong> — check-in / check-out is only available on the current day.
         </div>
       )}

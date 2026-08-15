@@ -3,11 +3,12 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { RosterRow } from '@/lib/dashboard';
 import type { ChildStatus } from '@/lib/attendance';
+import { Card, Toolbar, FilterChips, StatusTag, type Chip, type StatusTone } from '@/components/console';
 
-const meta: Record<ChildStatus, { label: string; bg: string; fg: string }> = {
-  checked_in: { label: 'Checked in', bg: '#A7F0BA', fg: '#0E6027' },
-  checked_out: { label: 'Checked out', bg: '#E0E0E0', fg: '#393939' },
-  not_arrived: { label: 'Not arrived', bg: '#DDE1E6', fg: '#343A3F' },
+const STATUS_TAG: Record<ChildStatus, { tone: StatusTone; label: string }> = {
+  checked_in: { tone: 'success', label: 'Checked in' },
+  checked_out: { tone: 'neutral', label: 'Checked out' },
+  not_arrived: { tone: 'neutral', label: 'Not arrived' },
 };
 
 // Narrow row status: a dot + word, not a filled pill.
@@ -35,8 +36,6 @@ export default function Roster({ roster, actionBar = false }: { roster: RosterRo
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  useEffect(() => setOpenId(null), [q, filter]);
-
   // Counts + displayed rows in one pass: apply the text query FIRST, count by status on
   // that searched set, THEN apply the status filter — so the strip can never disagree
   // with the rows on screen.
@@ -54,6 +53,9 @@ export default function Roster({ roster, actionBar = false }: { roster: RosterRo
     const rows = filter === 'all' ? searched : searched.filter((r) => r.status === filter);
     return { counts, rows };
   }, [roster, q, filter]);
+
+  // Never leave a now-hidden row expanded (replaces a reset-on-filter effect).
+  const effectiveOpenId = rows.some((r) => r.id === openId) ? openId : null;
 
   // ---------- NARROW: filter strip + rows + sticky-bar clearance ----------
   if (narrow) {
@@ -108,7 +110,7 @@ export default function Roster({ roster, actionBar = false }: { roster: RosterRo
           )}
           {rows.map((r, idx) => {
             const s = statusNarrow[r.status];
-            const open = openId === r.id;
+            const open = effectiveOpenId === r.id;
             const detailId = `roster-detail-${r.id}`;
             const toggle = () => setOpenId(open ? null : r.id);
             const segs: React.ReactNode[] = [];
@@ -176,43 +178,18 @@ export default function Roster({ roster, actionBar = false }: { roster: RosterRo
     );
   }
 
-  // ---------- DESKTOP (unchanged) ----------
-  const chips: { key: Filter; label: string }[] = [
-    { key: 'all', label: `All (${roster.length})` },
-    { key: 'checked_in', label: `On-site (${roster.filter((r) => r.status === 'checked_in').length})` },
-    { key: 'checked_out', label: `Checked out (${roster.filter((r) => r.status === 'checked_out').length})` },
-    { key: 'not_arrived', label: `Not arrived (${roster.filter((r) => r.status === 'not_arrived').length})` },
+  // ---------- DESKTOP: search + chips in the data-card toolbar ----------
+  const chips: (Chip & { key: Filter })[] = [
+    { key: 'all', label: 'All', count: counts.all },
+    { key: 'checked_in', label: 'On-site', count: counts.checked_in },
+    { key: 'checked_out', label: 'Checked out', count: counts.checked_out },
+    { key: 'not_arrived', label: 'Not arrived', count: counts.not_arrived },
   ];
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        {chips.map((c) => (
-          <button
-            key={c.key}
-            onClick={() => setFilter(c.key)}
-            style={{
-              height: 32,
-              padding: '0 12px',
-              fontSize: 13,
-              cursor: 'pointer',
-              border: '1px solid ' + (filter === c.key ? '#0F62FE' : '#8D8D8D'),
-              background: filter === c.key ? '#EDF5FF' : '#fff',
-              color: filter === c.key ? '#0F62FE' : '#161616',
-            }}
-          >
-            {c.label}
-          </button>
-        ))}
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Filter by name or tag"
-          style={{ flex: 1, minWidth: 180, height: 32, border: 'none', borderBottom: '1px solid #8D8D8D', padding: '0 12px', fontSize: 13 }}
-        />
-      </div>
-
-      <div style={{ background: '#fff', border: '1px solid #E0E0E0', overflowX: 'auto' }}>
+    <Card>
+      <Toolbar q={q} onQ={setQ} placeholder="Filter by name or tag" chips={<FilterChips chips={chips} value={filter} onChange={setFilter} />} />
+      <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 640 }}>
           <thead>
             <tr style={{ background: '#E0E0E0' }}>
@@ -232,24 +209,21 @@ export default function Roster({ roster, actionBar = false }: { roster: RosterRo
                 </td>
               </tr>
             )}
-            {rows.map((r) => {
-              const m = meta[r.status];
-              return (
-                <tr key={r.id}>
-                  <td style={td}>{r.firstName} {r.lastName}</td>
-                  <td style={td}>{r.age ?? '—'}</td>
-                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 13 }}>{r.tagCode ?? '—'}</td>
-                  <td style={td}>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 10px', background: m.bg, color: m.fg }}>{m.label}</span>
-                  </td>
-                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 13 }}>{r.inAt ?? '—'}</td>
-                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 13 }}>{r.outAt ?? '—'}</td>
-                </tr>
-              );
-            })}
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td style={td}>{r.firstName} {r.lastName}</td>
+                <td style={td}>{r.age ?? '—'}</td>
+                <td style={{ ...td, fontFamily: 'monospace', fontSize: 13 }}>{r.tagCode ?? '—'}</td>
+                <td style={td}>
+                  <StatusTag tone={STATUS_TAG[r.status].tone}>{STATUS_TAG[r.status].label}</StatusTag>
+                </td>
+                <td style={{ ...td, fontFamily: 'monospace', fontSize: 13 }}>{r.inAt ?? '—'}</td>
+                <td style={{ ...td, fontFamily: 'monospace', fontSize: 13 }}>{r.outAt ?? '—'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }

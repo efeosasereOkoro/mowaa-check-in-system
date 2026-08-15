@@ -1,6 +1,7 @@
 import { requireRole } from '@/lib/require-role';
 import { getCurrentEventDay } from '@/lib/attendance';
 import { getEventDaysList, getDayRoster, type Counters } from '@/lib/dashboard';
+import { Card, CardHeader } from '@/components/console';
 import ChildLookup from './child-lookup';
 import Roster from './roster';
 import DayPicker, { type DayItem } from './day-picker';
@@ -53,25 +54,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   }));
 
   return (
-    <div style={{ maxWidth: 1000 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        <DesktopOnly>
-          <div style={{ fontSize: 12, color: '#525252' }}>Attendance console</div>
-        </DesktopOnly>
-        {/* Both receptionists and admins register from here (receptionists can't reach /children). */}
-        <div style={{ marginLeft: 'auto' }}>
-          <RegisterChildButton />
-        </div>
-      </div>
-
+    <div style={{ maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 24 }}>
       {selectedId ? (
-        <DayPicker items={dayItems} selectedId={selectedId} />
+        <DayPicker items={dayItems} selectedId={selectedId} registered={counters.total} register={<RegisterChildButton />} />
       ) : (
-        <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 16px' }}>Dashboard</h1>
+        <div style={{ background: '#fff', border: '1px solid #E0E0E0', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>Dashboard</h1>
+          <div style={{ marginLeft: 'auto' }}>
+            <RegisterChildButton />
+          </div>
+        </div>
       )}
 
       <DesktopOnly>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div style={tile}><div style={tileLabel}>Registered</div><div style={tileNum}>{counters.total}</div></div>
           <div style={tile}><div style={tileLabel}>On-site</div><div style={{ ...tileNum, color: '#0E6027' }}>{counters.checkedIn}</div></div>
           <div style={tile}><div style={tileLabel}>Checked out</div><div style={tileNum}>{counters.checkedOut}</div></div>
@@ -80,17 +76,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </DesktopOnly>
 
       {isCurrent && (
-        <div style={{ marginBottom: 14 }}>
-          <DesktopOnly>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Find a child</div>
-          </DesktopOnly>
-          <ChildLookup isAdmin={staff.role === 'admin'} />
-        </div>
+        <Card>
+          <CardHeader title="Find a child" />
+          <div style={{ padding: 16 }}>
+            <ChildLookup isAdmin={staff.role === 'admin'} />
+          </div>
+        </Card>
       )}
 
-      <DesktopOnly>
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Roster</div>
-      </DesktopOnly>
       <Roster roster={roster} actionBar={isCurrent} />
     </div>
   );
