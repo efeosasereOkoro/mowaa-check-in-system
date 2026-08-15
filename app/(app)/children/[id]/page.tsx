@@ -8,13 +8,11 @@ import { listPickupPersons } from '@/lib/pickup-persons';
 import { listGuardians } from '@/lib/guardians';
 import { listTagsForChild } from '@/lib/tags';
 import { AttendanceTable, MedicalNotesList } from '@/components/child-record';
+import { PageBand, Card, CardHeader } from '@/components/console';
 import EditChildForm from './edit-child-form';
 import TagSection from './tag-section';
 import PickupPersonsSection from './pickup-persons';
 import DeleteChildButton from './delete-child-button';
-
-const sectionStyle: React.CSSProperties = { marginTop: 24, borderTop: '1px solid #E0E0E0', paddingTop: 20 };
-const sectionH2: React.CSSProperties = { fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: '#161616' };
 
 export const dynamic = 'force-dynamic';
 
@@ -32,24 +30,23 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
   const canSeeHealth = staff.role === 'admin' || staff.role === 'health';
 
   return (
-    <div style={{ maxWidth: 720 }}>
-      <div style={{ fontSize: 12, color: '#525252', marginBottom: 4 }}>
-        <Link href="/children" style={{ color: '#0F62FE' }}>
-          Children
-        </Link>{' '}
-        / Edit
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', margin: '0 0 24px' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 400, margin: 0 }}>
-          {child.firstName} {child.lastName}
-        </h1>
-        <Link href={`/cards?child=${child.id}`} target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
-          Print QR card →
-        </Link>
-        <Link href={`/child-report?child=${child.id}`} target="_blank" style={{ color: '#0F62FE', fontSize: 14 }}>
-          Generate report →
-        </Link>
-      </div>
+    <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageBand
+        breadcrumb={
+          <>
+            <Link href="/children" style={{ color: '#0F62FE' }}>
+              Children
+            </Link>{' '}
+            / {child.firstName} {child.lastName}
+          </>
+        }
+        title={`${child.firstName} ${child.lastName}`}
+        context={`Age ${child.age ?? '—'}`}
+        actions={[
+          { key: 'card', label: 'Print QR card', href: `/cards?child=${child.id}`, target: '_blank' },
+          { key: 'report', label: 'Generate report', href: `/child-report?child=${child.id}`, target: '_blank' },
+        ]}
+      />
 
       <EditChildForm
         child={{
@@ -66,73 +63,58 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
       />
 
       {guardians.length > 0 && (
-        <section style={sectionStyle}>
-          <h2 style={sectionH2}>Guardians</h2>
-          <div style={{ border: '1px solid #E0E0E0' }}>
-            {guardians.map((g, i) => (
-              <div
-                key={g.id}
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'baseline',
-                  gap: '4px 12px',
-                  padding: '10px 14px',
-                  borderTop: i === 0 ? 'none' : '1px solid #E0E0E0',
-                }}
-              >
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{g.name}</span>
-                {g.isPrimary && (
-                  <span style={{ fontSize: 11, color: '#0F62FE', border: '1px solid #0F62FE', padding: '1px 6px' }}>Primary</span>
-                )}
-                {g.relationship && <span style={{ fontSize: 13, color: '#525252' }}>{g.relationship}</span>}
-                {g.phone && <span style={{ fontSize: 13, color: '#525252', fontFamily: 'var(--font-mono, monospace)' }}>{g.phone}</span>}
-                {g.email && <span style={{ fontSize: 13, color: '#525252' }}>{g.email}</span>}
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: 12, color: '#8D8D8D', marginTop: 8 }}>
+        <Card>
+          <CardHeader title="Guardians" />
+          {guardians.map((g, i) => (
+            <div
+              key={g.id}
+              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 12px', padding: '10px 16px', borderTop: i === 0 ? 'none' : '1px solid #F4F4F4' }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 600 }}>{g.name}</span>
+              {g.isPrimary && <span style={{ fontSize: 11, color: '#0F62FE', border: '1px solid #0F62FE', padding: '1px 6px' }}>Primary</span>}
+              {g.relationship && <span style={{ fontSize: 13, color: '#525252' }}>{g.relationship}</span>}
+              {g.phone && <span style={{ fontSize: 13, color: '#525252', fontFamily: 'monospace' }}>{g.phone}</span>}
+              {g.email && <span style={{ fontSize: 13, color: '#525252' }}>{g.email}</span>}
+            </div>
+          ))}
+          <div style={{ padding: '10px 16px', fontSize: 12, color: '#8D8D8D', borderTop: '1px solid #F4F4F4' }}>
             The primary guardian’s contact is edited in the form above. Additional guardians are captured at registration.
           </div>
-        </section>
+        </Card>
       )}
 
       <TagSection
         childId={child.id}
-        tags={childTags.map((t) => ({
-          id: t.id,
-          code: t.code,
-          nfcUid: t.nfcUid,
-          active: t.active,
-        }))}
+        tags={childTags.map((t) => ({ id: t.id, code: t.code, nfcUid: t.nfcUid, active: t.active }))}
       />
 
       <PickupPersonsSection
         childId={child.id}
-        persons={pickups.map((p) => ({
-          id: p.id,
-          name: p.name,
-          relationship: p.relationship,
-          phone: p.phone,
-        }))}
+        persons={pickups.map((p) => ({ id: p.id, name: p.name, relationship: p.relationship, phone: p.phone }))}
       />
 
-      <section style={sectionStyle}>
-        <h2 style={sectionH2}>Attendance</h2>
-        <AttendanceTable days={attendance} />
-      </section>
+      <Card>
+        <CardHeader title="Attendance" />
+        <div style={{ padding: 16 }}>
+          <AttendanceTable days={attendance} />
+        </div>
+      </Card>
 
       {canSeeHealth && (
-        <section style={sectionStyle}>
-          <h2 style={sectionH2}>Health record</h2>
-          <MedicalNotesList notes={medical?.notes ?? []} />
-        </section>
+        <Card>
+          <CardHeader title="Health record" />
+          <div style={{ padding: 16 }}>
+            <MedicalNotesList notes={medical?.notes ?? []} />
+          </div>
+        </Card>
       )}
 
-      <div style={{ marginTop: 24, borderTop: '1px solid #E0E0E0', paddingTop: 20 }}>
-        <div style={{ fontSize: 12, color: '#525252', marginBottom: 8 }}>Danger zone</div>
-        <DeleteChildButton id={child.id} />
-      </div>
+      <Card>
+        <CardHeader title="Danger zone" />
+        <div style={{ padding: 16 }}>
+          <DeleteChildButton id={child.id} />
+        </div>
+      </Card>
     </div>
   );
 }
