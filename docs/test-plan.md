@@ -7,9 +7,11 @@ doesn't match the **Expected** result.
 - **Logins you need:** an **Admin**, a **Receptionist**, and a **Health Officer** account. (Use the
   accounts set up in the app — provision them under **Users** if needed. Passwords aren't listed here
   on purpose.)
+- ⚠️ **This system holds real data.** Don't delete children or suspend users you don't own during
+  testing — use a dedicated **test child** and **test user** for the destructive steps (A6, F3), and
+  remove them afterwards.
 - **Current day:** check-in / check-out only works on the **current** event day (06:00–22:00 GMT+1).
-  The seeded **"Pre-event test day"** is open now — use it. On a past/future day you'll see a notice and
-  no check-in buttons (that's correct).
+  On a past/future day you'll see a notice and no check-in buttons (that's correct).
 - **Switching roles on one browser:** click **Sign out** fully between roles — the desk is single-session,
   so the next person must sign in as themselves.
 - **Test on two sizes:** once on a **laptop** and once on a **phone** (or narrow the browser < 672px) to
@@ -22,8 +24,9 @@ Legend: **[ ]** = to test · Expected = what should happen · 🚩 = security-se
 ## A. Admin — registration & setup
 - [ ] **A1 Register a child.** Children → fill Add child (name, age, guardian, phone, address, health) → Add.
   **Expected:** child appears in the list; success message.
-- [ ] **A2 Assign a tag number.** Open the child → Tag number → enter e.g. `TAG-100` → Assign.
-  **Expected:** "Current: TAG-100"; the number is searchable and prints on the card.
+- [ ] **A2 Tag number (auto-assigned).** After registering, open the child → Tag number.
+  **Expected:** a tag number was assigned **automatically** at registration; it's searchable and prints
+  on the card. Reassigning issues a new number and deactivates the old one.
 - [ ] **A3 Print QR ID cards.** Children → **Print QR ID cards →** (opens `/cards`).
   **Expected:** one card per child with event name + name + **QR** + tag number; **Print cards** works.
 - [ ] **A4 Add pickup person.** Open the child → Authorized pickup persons → add name + relationship → Add.
@@ -39,20 +42,20 @@ Legend: **[ ]** = to test · Expected = what should happen · 🚩 = security-se
   **Expected:** the correct child opens. (No camera → clear message + search still works.)
 - [ ] **B3 Check in.** On the child's card → **Check in**. **Expected:** status → **Checked in** with the time;
   dashboard **On-site** count goes up.
-- [ ] **B4 Once-per-day.** Try **Check in** again on the same child. **Expected:** blocked — "Already checked in today."
-- [ ] **B5 Check out.** Find the checked-in child → **Check out** → **choose the collector** → confirm.
+- [ ] **B4 Check out.** Find the checked-in child → **Check out** → **choose the collector** → confirm.
   **Expected:** status → **Checked out** with time + collector name recorded.
-- [ ] **B6 Re-entry needs override.** Try to check the checked-out child in again.
-  **Expected:** blocked — an admin override is required.
+- [ ] **B5 Multiple visits per day.** Check the same child **in** again after checking out.
+  **Expected:** allowed and logged with a new time — children may check in/out **more than once a day**.
+  (There is no once-per-day limit and no admin override.)
 - [ ] 🚩 **B7 Field visibility.** On any child card as receptionist. **Expected:** you see name, tag, age,
   guardian, phone — but **no home address and no health/medical info** anywhere.
 - [ ] **B8 Dashboard.** Check the counters (Registered / On-site / Checked out / Not arrived), the roster
   filter chips + search, and the day picker (‹ ›, "All days", "Go to today"). **Expected:** all consistent.
 
-## C. Admin — override
-- [ ] **C1 Override re-check-in.** As Admin, find the checked-out child → Check in → provide a **reason**.
-  **Expected:** succeeds; the row is flagged as an override in reports.
-- [ ] **C2 Reason required.** Attempt an override with an empty reason. **Expected:** blocked — reason required.
+## C. Admin — override *(retired)*
+The once-per-day limit and admin override were removed — children may now check in/out multiple times a
+day (decision **D-035**). Nothing to test here; re-entry is covered by **B5**. Historical rows that were
+flagged as overrides still render in reports.
 
 ## D. Health Officer
 - [ ] **D1 Health dashboard.** Health → search a child. **Expected:** list with status, health flags, last note.
@@ -66,8 +69,8 @@ Legend: **[ ]** = to test · Expected = what should happen · 🚩 = security-se
   **Expected:** you're redirected to the Health area — no access to those.
 
 ## E. Reports & export (Admin)
-- [ ] **E1 Per-day report.** Reports → pick a day. **Expected:** every check-in/out with time, child, action,
-  staff, collector; overrides badged.
+- [ ] **E1 Per-day report.** Reports → pick a day. **Expected:** every check-in/out with time, child,
+  action (**In** / **Out** status tag), staff, collector.
 - [ ] **E2 All days.** Switch the selector to **All days**. **Expected:** a Day column appears; all days listed.
 - [ ] **E3 End-of-day flags.** For a day. **Expected:** "Still checked in (N)" list + "Emergency notes today" count.
 - [ ] **E4 Export attendance CSV.** Click **Export attendance (CSV)**. **Expected:** a `.csv` downloads and opens
