@@ -9,9 +9,9 @@ import {
   type ImportResultState,
 } from './import-actions';
 
-export default function ImportChildren() {
+// Controlled import modal — opened by the Children page band's "Import from spreadsheet" action.
+export default function ImportChildren({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreviewState | null>(null);
   const [sendEmails, setSendEmails] = useState(false);
@@ -26,8 +26,8 @@ export default function ImportChildren() {
     setBusy(false);
   }
   function close() {
-    setOpen(false);
     reset();
+    onClose();
   }
 
   async function onFile(f: File | null) {
@@ -57,24 +57,16 @@ export default function ImportChildren() {
   const validCount = preview?.validCount ?? 0;
   const box: React.CSSProperties = { padding: '10px 14px', fontSize: 13, marginBottom: 14, border: '1px solid' };
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', background: '#fff', border: '1px solid #161616', color: '#161616', fontSize: 14, cursor: 'pointer' }}
-      >
-        Import from spreadsheet
-      </button>
+  if (!open) return null;
 
-      {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Import children from a spreadsheet"
-          onClick={close}
-          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(22,22,22,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '40px 16px' }}
-        >
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Import children from a spreadsheet"
+      onClick={close}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(22,22,22,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '40px 16px' }}
+    >
           <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', width: '100%', maxWidth: 560, border: '1px solid #E0E0E0' }}>
             <div style={{ height: 56, borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
               <span style={{ fontSize: 16, fontWeight: 600 }}>Import children</span>
@@ -161,7 +153,5 @@ export default function ImportChildren() {
             </div>
           </div>
         </div>
-      )}
-    </>
   );
 }
