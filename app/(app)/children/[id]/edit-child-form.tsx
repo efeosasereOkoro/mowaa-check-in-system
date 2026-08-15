@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { updateChildAction, type ChildActionState } from '../actions';
 
 type ChildValues = {
@@ -113,7 +114,7 @@ export default function EditChildForm({ child }: { child: ChildValues }) {
         >
           {pending ? 'Saving…' : 'Save changes'}
         </button>
-        <a
+        <Link
           href="/children"
           style={{
             height: 40,
@@ -126,7 +127,7 @@ export default function EditChildForm({ child }: { child: ChildValues }) {
           }}
         >
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   );
